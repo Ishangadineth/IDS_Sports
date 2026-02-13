@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server';
 import axios from 'axios';
 import { database } from '@/lib/firebase';
 import { ref, child, get } from 'firebase/database';
-import { database } from '@/lib/firebase';
-import { ref, child, get } from 'firebase/database';
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
