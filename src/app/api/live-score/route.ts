@@ -42,7 +42,12 @@ export async function GET(req: Request) {
         };
 
         const response = await axios.request(options);
-        return NextResponse.json({ success: true, data: response.data });
+
+        return NextResponse.json({ success: true, data: response.data }, {
+            headers: {
+                'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=30',
+            }
+        });
     } catch (error) {
         console.error('External API Error:', error);
         return NextResponse.json({ error: 'Failed to fetch live score' }, { status: 500 });
