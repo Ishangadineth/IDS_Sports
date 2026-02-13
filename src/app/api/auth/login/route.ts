@@ -33,11 +33,25 @@ export async function POST(req: Request) {
             );
         }
 
-        const token = jwt.sign({ userId: user._id, username: user.username }, JWT_SECRET, {
+        const token = jwt.sign({ userId: user._id, username: user.username, role: user.role }, JWT_SECRET, {
             expiresIn: '1d',
         });
 
-        const response = NextResponse.json({ message: 'Login successful' });
+        // Log Activity
+        await logActivity(
+            { _id: user._id, username: user.username, role: user.role },
+            'LOGIN',
+            'User logged in successfully',
+            req
+        );
+
+        const response = NextResponse.json({
+            message: 'Login successful',
+            user: {
+                username: user.username,
+                role: user.role
+            }
+        });
 
         // Set cookie
         response.cookies.set('token', token, {

@@ -2,13 +2,15 @@
 
 import useSWR from 'swr';
 import Link from 'next/link';
-import { FaPlayCircle, FaCalendarAlt, FaClock } from 'react-icons/fa';
-import Countdown from '@/components/Live/Countdown'; // Optional usage if we want countdown on card
+import { useState } from 'react';
+import { FaPlayCircle, FaCalendarAlt, FaClock, FaTv, FaTimes } from 'react-icons/fa';
+import Countdown from '@/components/Live/Countdown';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export default function Home() {
   const { data, isLoading } = useSWR('/api/events', fetcher, { refreshInterval: 30000 });
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
 
   if (isLoading) {
     return (
@@ -21,18 +23,14 @@ export default function Home() {
   const allEvents = data?.data || [];
   const now = new Date();
 
-  // Filter events: 
-  // 1. Live or Delayed (Always show)
-  // 2. Scheduled (Show if within 24 hours)
+  // Filter events
   const visibleEvents = allEvents.filter((event: any) => {
     if (event.status === 'Live' || event.status === 'Delayed') return true;
-    if (event.status === 'Ended') return false; // Optionally hide ended events or show in a separate section
-
+    if (event.status === 'Ended') return false;
     const startTime = new Date(event.startTime);
     const timeDiff = startTime.getTime() - now.getTime();
     const hoursDiff = timeDiff / (1000 * 60 * 60);
-
-    return hoursDiff <= 24 && hoursDiff > -12; // Show if starting in <24h or ended <12h ago (buffer)
+    return hoursDiff <= 24 && hoursDiff > -12;
   });
 
   const liveEvents = visibleEvents.filter((e: any) => e.status === 'Live' || e.status === 'Delayed');
@@ -50,7 +48,7 @@ export default function Home() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {liveEvents.map((event: any) => (
-              <EventCard key={event._id} event={event} isLive={true} />
+              <EventCard key={event._id} event={event} isLive={true} onSelect={() => setSelectedEvent(event)} />
             ))}
           </div>
         </section>
@@ -62,7 +60,7 @@ export default function Home() {
         {upcomingEvents.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {upcomingEvents.map((event: any) => (
-              <EventCard key={event._id} event={event} />
+              <EventCard key={event._id} event={event} onSelect={() => setSelectedEvent(event)} />
             ))}
           </div>
         ) : (
@@ -70,15 +68,53 @@ export default function Home() {
         )}
       </section>
 
+      {/* Channel Selector Modal */}
+      {selectedEvent && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setSelectedEvent(null)}>
+          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-md w-full relative shadow-2xl" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setSelectedEvent(null)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white"
+            >
+              <FaTimes size={20} />
+            </button>
+
+            <h3 className="text-2xl font-bold mb-2 pr-8">{selectedEvent.title}</h3>
+            <p className="text-gray-400 text-sm mb-6">{selectedEvent.description}</p>
+
+            <div className="space-y-3">
+              <p className="text-sm font-semibold text-blue-400 uppercase tracking-wider mb-2">Select a Channel:</p>
+              {selectedEvent.streamLinks && selectedEvent.streamLinks.length > 0 ? (
+                selectedEvent.streamLinks.map((link: any, index: number) => (
+                  <Link
+                    key={index}
+                    href={`/event/${selectedEvent._id}?channel=${index}`}
+                    className="block bg-gray-800 hover:bg-blue-600 border border-gray-700 hover:border-blue-500 rounded-lg p-4 transition-all flex items-center justify-between group"
+                  >
+                    <span className="font-bold flex items-center gap-3">
+                      <FaTv className="text-gray-500 group-hover:text-white" />
+                      {link.name || `Channel ${index + 1}`}
+                    </span>
+                    <FaPlayCircle className="text-gray-600 group-hover:text-white text-xl" />
+                  </Link>
+                ))
+              ) : (
+                <p className="text-red-400 text-sm">No channels available at the moment.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
 
-function EventCard({ event, isLive = false }: { event: any, isLive?: boolean }) {
+function EventCard({ event, isLive = false, onSelect }: { event: any, isLive?: boolean, onSelect: () => void }) {
   const startTime = new Date(event.startTime);
 
   return (
-    <Link href={`/event/${event._id}`} className="group block bg-gray-900 rounded-xl overflow-hidden border border-gray-800 hover:border-blue-500 transition-all hover:shadow-lg hover:shadow-blue-500/20">
+    <div onClick={onSelect} className="cursor-pointer group block bg-gray-900 rounded-xl overflow-hidden border border-gray-800 hover:border-blue-500 transition-all hover:shadow-lg hover:shadow-blue-500/20">
       <div className="relative h-40 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-between px-6 pt-4">
         {/* Team A */}
         <div className="flex flex-col items-center">
@@ -131,6 +167,6 @@ function EventCard({ event, isLive = false }: { event: any, isLive?: boolean }) 
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }

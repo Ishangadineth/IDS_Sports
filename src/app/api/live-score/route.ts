@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
+import { database } from '@/lib/firebase';
+import { ref, child, get } from 'firebase/database';
+import { database } from '@/lib/firebase';
+import { ref, child, get } from 'firebase/database';
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
@@ -9,7 +13,18 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: 'Match ID is required' }, { status: 400 });
     }
 
-    const API_KEY = process.env.CRIC_API_KEY;
+    // Fetch API Key from Firebase Database (Config) to allow dynamic updates
+    let API_KEY = process.env.CRIC_API_KEY || "18f661a9-2375-4a06-9bf9-18fd9c5426ca"; // Fallback
+
+    try {
+        const snapshot = await get(child(ref(database), 'config/cricketApiKey'));
+        if (snapshot.exists()) {
+            API_KEY = snapshot.val();
+        }
+    } catch (err) {
+        console.warn('Failed to fetch API key from Firebase, using fallback.');
+    }
+
     const API_HOST = 'cricbuzz-cricket.p.rapidapi.com'; // Example host
 
     if (!API_KEY || API_KEY === 'your_rapidapi_key_here') {
@@ -21,7 +36,7 @@ export async function GET(req: Request) {
                 type: 'mock',
                 matchHeader: {
                     status: 'Live',
-                    matchDescription: 'SL vs IND',
+                    matchDescription: 'SL vs IND (Mock Data - No API Key)',
                 },
                 scoreCard: [
                     { batTeamDetails: { batTeamName: 'SL' }, scoreDetails: { runs: 225, wickets: 5, overs: 20 } },

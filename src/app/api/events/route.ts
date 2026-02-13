@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Event from '@/models/Event';
 import jwt from 'jsonwebtoken';
+import { logActivity } from '@/lib/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 
@@ -37,6 +38,17 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
         const event = await Event.create(body);
+
+        // Log Activity
+        // Note: verifyToken returns a payload, we might need to cast or ensure it has role/username
+        const userData = user as any;
+        await logActivity(
+            { _id: userData.userId, username: userData.username, role: userData.role },
+            'CREATE_EVENT',
+            `Created event: ${event.title}`,
+            req
+        );
+
         return NextResponse.json({ success: true, data: event }, { status: 201 });
     } catch (error) {
         return NextResponse.json({ success: false, error: 'Failed to create event' }, { status: 400 });

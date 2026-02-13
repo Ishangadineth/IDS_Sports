@@ -20,6 +20,8 @@ export const metadata: Metadata = {
   description: "Watch live sports events on IDS Sports.",
 };
 
+import GoogleAnalytics from "@/components/GoogleAnalytics";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -31,6 +33,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-950 text-white min-h-screen flex flex-col`}
       >
         <AntiDebug />
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || "G-S3MTWH8KWV"} />
 
         {/* Navbar */}
         <header className="bg-black/50 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50">
@@ -63,7 +66,7 @@ export default function RootLayout({
             </div>
             <p className="mb-2">IDS Sports Version 1.0</p>
             <p className="text-sm">
-              Developed by <a href="https://ishangadineth.online/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Ishan Gadineth</a>
+              Developed by <a href="https://ishangadineth.online/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Ishanga Dineth</a>
             </p>
             <p className="text-xs mt-4 text-gray-600">© {new Date().getFullYear()} IDS Sports. All rights reserved.</p>
           </div>

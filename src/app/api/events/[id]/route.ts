@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Event from '@/models/Event';
 import jwt from 'jsonwebtoken';
+import { logActivity } from '@/lib/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 
@@ -48,6 +49,16 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         if (!event) {
             return NextResponse.json({ success: false, error: 'Event not found' }, { status: 404 });
         }
+
+        // Log Activity
+        const userData = user as any;
+        await logActivity(
+            { _id: userData.userId, username: userData.username, role: userData.role },
+            'UPDATE_EVENT',
+            `Updated event: ${event.title}`,
+            req
+        );
+
         return NextResponse.json({ success: true, data: event });
     } catch (error) {
         return NextResponse.json({ success: false, error: 'Failed to update event' }, { status: 400 });
@@ -64,10 +75,22 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     const { id } = await params;
 
     try {
+        const eventToDelete = await Event.findById(id); // Fetch before delete to get title
         const deletedEvent = await Event.deleteOne({ _id: id });
-        if (!deletedEvent) {
+
+        if (deletedEvent.deletedCount === 0) {
             return NextResponse.json({ success: false, error: 'Event not found' }, { status: 404 });
         }
+
+        // Log Activity
+        const userData = user as any;
+        await logActivity(
+            { _id: userData.userId, username: userData.username, role: userData.role },
+            'DELETE_EVENT',
+            `Deleted event: ${eventToDelete?.title || id}`,
+            req
+        );
+
         return NextResponse.json({ success: true, data: {} });
     } catch (error) {
         return NextResponse.json({ success: false, error: 'Failed to delete event' }, { status: 400 });

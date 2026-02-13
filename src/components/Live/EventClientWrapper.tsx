@@ -1,13 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import VideoPlayer from '@/components/Live/VideoPlayer';
 import ScoreCard from '@/components/Live/ScoreCard';
 import Countdown from '@/components/Live/Countdown';
 import { FaTv, FaLock } from 'react-icons/fa';
 
 export default function EventClientWrapper({ event }: { event: any }) {
-    const [currentLink, setCurrentLink] = useState(event.streamLinks[0]?.url || '');
+    const searchParams = useSearchParams();
+    const initialChannelIndex = parseInt(searchParams.get('channel') || '0');
+
+    // Ensure index is valid
+    const safeIndex = (initialChannelIndex >= 0 && initialChannelIndex < event.streamLinks.length)
+        ? initialChannelIndex
+        : 0;
+
+    const [currentLink, setCurrentLink] = useState(event.streamLinks[safeIndex]?.url || '');
     const [showPlayer, setShowPlayer] = useState(false);
     const [statusLabel, setStatusLabel] = useState<string>('');
     const [targetDate] = useState(new Date(event.startTime));
@@ -67,8 +76,8 @@ export default function EventClientWrapper({ event }: { event: any }) {
                             key={index}
                             onClick={() => setCurrentLink(link.url)}
                             className={`px-4 py-2 rounded font-bold text-sm transition flex items-center gap-2 ${currentLink === link.url
-                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
+                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                                : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
                                 }`}
                         >
                             <FaTv /> {link.name}
