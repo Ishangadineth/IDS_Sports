@@ -1,13 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { jose } from 'jose';
-// Note: 'jose' or 'jsonwebtoken' might be needed. Next.js Edge Runtime doesn't support 'jsonwebtoken'.
-// I will use a simple cookie check for now or verify using 'jose' if installed. 
-// Installing 'jose' or just checking for cookie presence is lighter.
-// Since I installed 'jsonwebtoken', but it might fail in Middleware (Edge).
-// I will just check for the presence of the cookie for now to keep it simple and valid on standard Node runtime if not edge.
-// Actually, standard middleware runs on Edge. I should use 'jose' or just check existence.
-// For MVP, I'll check existence of 'token'.
+
+// Middleware to protect admin routes and API access
 
 export function middleware(request: NextRequest) {
     const path = request.nextUrl.pathname;
