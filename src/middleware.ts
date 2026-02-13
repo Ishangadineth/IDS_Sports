@@ -20,15 +20,16 @@ export function middleware(request: NextRequest) {
         }
     }
 
-    // 2. API Protection (Referer Check) - Optional/Strict mode
-    // const referer = request.headers.get('referer');
-    // if (path.startsWith('/api/live-score') || path.startsWith('/api/events')) {
-    //   if (process.env.NODE_ENV === 'production') {
-    //     if (!referer?.includes('ids-sports') && !referer?.includes('vercel.app')) { // Adjust based on actual domain
-    //        return new NextResponse(JSON.stringify({ message: 'Unauthorized source' }), { status: 403 });
-    //     }
-    //   }
-    // }
+    // 2. API Protection (Referer Check)
+    const referer = request.headers.get('referer');
+    if (path.startsWith('/api/live-score') || path.startsWith('/api/events')) {
+        if (process.env.NODE_ENV === 'production') {
+            const allowed = referer?.includes('ids-sports') || referer?.includes('vercel.app') || referer?.includes('ishangadineth.online');
+            if (!allowed) {
+                return new NextResponse(JSON.stringify({ message: 'Unauthorized source: ' + referer }), { status: 403 });
+            }
+        }
+    }
 
     return NextResponse.next();
 }
