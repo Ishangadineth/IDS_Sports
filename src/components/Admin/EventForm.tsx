@@ -26,6 +26,7 @@ export default function EventForm({ initialData, isEdit = false }: EventFormProp
         teamA: { name: '', logo: '' },
         teamB: { name: '', logo: '' },
         startTime: '',
+        endTime: '', // New field
         timezone: 'Asia/Colombo', // Default
         status: 'Scheduled',
         apiMatchId: '',
@@ -58,11 +59,13 @@ export default function EventForm({ initialData, isEdit = false }: EventFormProp
         if (initialData) {
             const tz = initialData.timezone || 'Asia/Colombo';
             const formattedDate = getLocalISOString(initialData.startTime, tz);
+            const formattedEndDate = initialData.endTime ? getLocalISOString(initialData.endTime, tz) : '';
 
             setFormData({
                 ...initialData,
                 timezone: tz,
                 startTime: formattedDate,
+                endTime: formattedEndDate,
                 streamLinks: initialData.streamLinks.length > 0 ? initialData.streamLinks : [{ name: 'Main Link', url: '' }]
             });
         }
@@ -107,10 +110,12 @@ export default function EventForm({ initialData, isEdit = false }: EventFormProp
 
         // Convert the "Wall Clock" input time to UTC based on selected Timezone
         const utcDate = getUTCDateFromLocal(formData.startTime, formData.timezone);
+        const utcEndDate = formData.endTime ? getUTCDateFromLocal(formData.endTime, formData.timezone) : null;
 
         const payload = {
             ...formData,
-            startTime: utcDate.toISOString() // Send proper UTC string
+            startTime: utcDate.toISOString(), // Send proper UTC string
+            endTime: utcEndDate ? utcEndDate.toISOString() : null,
         };
 
         const method = isEdit ? 'PUT' : 'POST';
@@ -172,6 +177,10 @@ export default function EventForm({ initialData, isEdit = false }: EventFormProp
                 <div>
                     <label className="block text-sm font-medium mb-1">Start Time (Adjusted to Timezone)</label>
                     <input type="datetime-local" name="startTime" value={formData.startTime} onChange={handleChange} className="w-full bg-gray-700 p-2 rounded" required />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium mb-1">End Time (Optional)</label>
+                    <input type="datetime-local" name="endTime" value={formData.endTime} onChange={handleChange} className="w-full bg-gray-700 p-2 rounded" />
                 </div>
                 <div>
                     <label className="block text-sm font-medium mb-1">Timezone</label>

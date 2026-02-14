@@ -23,9 +23,20 @@ export async function GET() {
         const events = await Event.find({}).sort({ startTime: 1 });
 
         // Auto-update status to 'Live' if start time has passed and status is 'Scheduled'
+        // Auto-update status to 'Ended' if end time has passed
         const now = new Date();
         const updates = events.map(async (event: any) => {
-            if (event.status === 'Scheduled' && new Date(event.startTime) <= now) {
+            const startTime = new Date(event.startTime);
+            const endTime = event.endTime ? new Date(event.endTime) : null;
+
+            // Check for 'Ended' condition
+            if (endTime && endTime <= now && event.status !== 'Ended') {
+                event.status = 'Ended';
+                event.streamLinks = []; // Security: Clear links
+                await Event.findByIdAndUpdate(event._id, { status: 'Ended', streamLinks: [] });
+            }
+            // Check for 'Live' condition
+            else if (event.status === 'Scheduled' && startTime <= now && (!endTime || endTime > now)) {
                 event.status = 'Live';
                 await Event.findByIdAndUpdate(event._id, { status: 'Live' });
             }

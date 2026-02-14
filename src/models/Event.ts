@@ -25,6 +25,9 @@ const EventSchema = new mongoose.Schema({
         type: Date,
         required: [true, 'Please provide a start time for the event.'],
     },
+    endTime: {
+        type: Date, // Optional end time for auto-ending
+    },
     status: {
         type: String,
         enum: ['Scheduled', 'Live', 'Ended', 'Delayed'],
