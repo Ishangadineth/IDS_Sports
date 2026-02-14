@@ -6,17 +6,32 @@ import VideoPlayer from '@/components/Live/VideoPlayer';
 import ScoreCard from '@/components/Live/ScoreCard';
 import Countdown from '@/components/Live/Countdown';
 import { FaTv, FaLock } from 'react-icons/fa';
-import useSWR from 'swr';
-
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function EventClientWrapper({ event: initialEvent }: { event: any }) {
     const searchParams = useSearchParams();
     const initialChannelIndex = parseInt(searchParams.get('channel') || '0');
 
-    // Poll for event updates (e.g., status change to 'Ended') every 1 minute
+    // Smart Polling: Poll less frequently if far from end time, more frequently if close
+    const now = new Date().getTime();
+    const endTime = initialEvent.endTime ? new Date(initialEvent.endTime).getTime() : null;
+    let refreshInterval = 300000; // Default: 5 minutes (save resources)
+
+    if (endTime) {
+        const timeUntilEnd = endTime - now;
+        if (timeUntilEnd < 15 * 60 * 1000 && timeUntilEnd > -15 * 60 * 1000) {
+            // If within 15 mins before or after end: Poll every 1 minute
+            refreshInterval = 60000;
+        } else if (timeUntilEnd <= -15 * 60 * 1000) {
+            // Long after end: Stop polling or poll very slowly
+            refreshInterval = 0;
+        }
+    } else {
+        // No end time set? Poll every 2 minutes just in case
+        refreshInterval = 120000;
+    }
+
     const { data } = useSWR(`/api/events/${initialEvent._id}`, fetcher, {
-        refreshInterval: 60000,
+        refreshInterval: refreshInterval,
         fallbackData: { success: true, data: initialEvent }
     });
 
@@ -34,13 +49,7 @@ export default function EventClientWrapper({ event: initialEvent }: { event: any
     const [matchStarted, setMatchStarted] = useState(false);
     const [showBanner, setShowBanner] = useState(true);
 
-    useEffect(() => {
-        // If event ends while watching, update local state to hide player or show ended message
-        if (event.status === 'Ended') {
-            setShowPlayer(false);
-            setStatusLabel('ENDED');
-        }
-    }, [event.status]);
+
 
     useEffect(() => {
         if (matchStarted) {
