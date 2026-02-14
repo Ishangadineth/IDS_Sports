@@ -7,7 +7,7 @@ export async function GET() {
     try {
         await dbConnect();
 
-        const username = 'aaids';
+        const username = 'ids';
         const newPassword = 'admin123';
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
