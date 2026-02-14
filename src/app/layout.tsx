@@ -23,6 +23,9 @@ export const metadata: Metadata = {
     shortcut: '/favicon.ico',
     apple: '/icon.png',
   },
+  other: {
+    'monetag': '54e9e19f8b2a625ae23504e00bc570a0',
+  },
 };
 
 import GoogleAnalytics from "@/components/GoogleAnalytics";
