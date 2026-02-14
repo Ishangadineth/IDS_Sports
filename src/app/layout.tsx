@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     apple: '/icon.png',
   },
   other: {
-    'monetag': '54e9e19f8b2a625ae23504e00bc570a0',
+    'monetag': '01a8574274c73162d9d5527bdb339d03',
   },
 };
 
