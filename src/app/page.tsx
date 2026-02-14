@@ -104,8 +104,8 @@ export default function Home() {
               <FaTimes size={20} />
             </button>
 
-            <h3 className="text-2xl font-bold mb-2 pr-8">{selectedEvent.title}</h3>
-            <p className="text-gray-400 text-sm mb-6">{selectedEvent.description}</p>
+            <h3 className="text-2xl font-bold mb-2 pr-8 text-white drop-shadow-md">{selectedEvent.title}</h3>
+            <p className="text-blue-200 text-sm mb-6 leading-relaxed">{selectedEvent.description}</p>
 
             <div className="space-y-3">
               {selectedEvent.status === 'Ended' ? (
@@ -234,8 +234,8 @@ function EventCard({ event, isLive = false, onSelect }: { event: any, isLive?: b
 
         {/* Title & Teams (If cover image exists, showing teams in text might be nice or just title) */}
         <div className="mb-3">
-          <h3 className="font-bold text-lg leading-tight group-hover:text-blue-400 transition line-clamp-2">{event.title}</h3>
-          <p className="text-gray-400 text-xs mt-1">
+          <h3 className="font-bold text-lg leading-tight text-white group-hover:text-[#00d2ff] transition-colors duration-300 line-clamp-2">{event.title}</h3>
+          <p className="text-blue-300 text-xs mt-1 font-medium">
             {event.teamA?.name} vs {event.teamB?.name}
           </p>
         </div>
