@@ -25,21 +25,34 @@ export default function Home() {
 
   // Filter events
   const visibleEvents = allEvents.filter((event: any) => {
+    // 1. Show 'Live' and 'Delayed' events always
     if (event.status === 'Live' || event.status === 'Delayed') return true;
-    if (event.status === 'Ended') return false;
+
+    // 2. Show 'Ended' events if they ended within the last 24 hours
+    if (event.status === 'Ended') {
+      if (!event.endTime) return false; // Safety check
+      const endTime = new Date(event.endTime);
+      const timeSinceEnd = now.getTime() - endTime.getTime();
+      const hoursSinceEnd = timeSinceEnd / (1000 * 60 * 60);
+      return hoursSinceEnd <= 24;
+    }
+
+    // 3. Show 'Scheduled' events if they start within the next 24 hours (and not more than 12 hours ago?)
     const startTime = new Date(event.startTime);
     const timeDiff = startTime.getTime() - now.getTime();
     const hoursDiff = timeDiff / (1000 * 60 * 60);
     return hoursDiff <= 24 && hoursDiff > -12;
   });
 
+  // Sort: Live/Delayed first, then Scheduled by start time, then Ended by end time (most recent first)
   const liveEvents = visibleEvents.filter((e: any) => e.status === 'Live' || e.status === 'Delayed');
   const upcomingEvents = visibleEvents.filter((e: any) => e.status === 'Scheduled');
+  const endedEvents = visibleEvents.filter((e: any) => e.status === 'Ended');
 
   return (
     <div className="space-y-12">
 
-      {/* Hero Section / Live Events */}
+      {/* Hero Section / Live & Delayed Events */}
       {liveEvents.length > 0 && (
         <section>
           <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
@@ -64,9 +77,21 @@ export default function Home() {
             ))}
           </div>
         ) : (
-          <p className="text-gray-500">No upcoming events scheduled within 24 hours.</p>
+          <p className="text-gray-500">No upcoming events scheduled.</p>
         )}
       </section>
+
+      {/* Ended Events (Last 24 Hours) */}
+      {endedEvents.length > 0 && (
+        <section>
+          <h2 className="text-2xl font-bold mb-6 text-gray-400">Recently Concluded</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-75 grayscale hover:grayscale-0 transition-all duration-500">
+            {endedEvents.map((event: any) => (
+              <EventCard key={event._id} event={event} onSelect={() => setSelectedEvent(event)} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Channel Selector Modal */}
       {selectedEvent && (
@@ -83,23 +108,32 @@ export default function Home() {
             <p className="text-gray-400 text-sm mb-6">{selectedEvent.description}</p>
 
             <div className="space-y-3">
-              <p className="text-sm font-semibold text-blue-400 uppercase tracking-wider mb-2">Select a Channel:</p>
-              {selectedEvent.streamLinks && selectedEvent.streamLinks.length > 0 ? (
-                selectedEvent.streamLinks.map((link: any, index: number) => (
-                  <Link
-                    key={index}
-                    href={`/event/${selectedEvent._id}?channel=${index}`}
-                    className="block bg-gray-800 hover:bg-blue-600 border border-gray-700 hover:border-blue-500 rounded-lg p-4 transition-all flex items-center justify-between group"
-                  >
-                    <span className="font-bold flex items-center gap-3">
-                      <FaTv className="text-gray-500 group-hover:text-white" />
-                      {link.name || `Channel ${index + 1}`}
-                    </span>
-                    <FaPlayCircle className="text-gray-600 group-hover:text-white text-xl" />
-                  </Link>
-                ))
+              {selectedEvent.status === 'Ended' ? (
+                <div className="bg-red-900/20 text-red-400 p-4 rounded text-center border border-red-900/50">
+                  <p className="font-bold">This event has ended.</p>
+                  <p className="text-sm opacity-75">Stream links have been removed.</p>
+                </div>
               ) : (
-                <p className="text-red-400 text-sm">No channels available at the moment.</p>
+                <>
+                  <p className="text-sm font-semibold text-blue-400 uppercase tracking-wider mb-2">Select a Channel:</p>
+                  {selectedEvent.streamLinks && selectedEvent.streamLinks.length > 0 ? (
+                    selectedEvent.streamLinks.map((link: any, index: number) => (
+                      <Link
+                        key={index}
+                        href={`/event/${selectedEvent._id}?channel=${index}`}
+                        className="block bg-gray-800 hover:bg-blue-600 border border-gray-700 hover:border-blue-500 rounded-lg p-4 transition-all flex items-center justify-between group"
+                      >
+                        <span className="font-bold flex items-center gap-3">
+                          <FaTv className="text-gray-500 group-hover:text-white" />
+                          {link.name || `Channel ${index + 1}`}
+                        </span>
+                        <FaPlayCircle className="text-gray-600 group-hover:text-white text-xl" />
+                      </Link>
+                    ))
+                  ) : (
+                    <p className="text-red-400 text-sm">No channels available at the moment.</p>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -112,6 +146,33 @@ export default function Home() {
 
 function EventCard({ event, isLive = false, onSelect }: { event: any, isLive?: boolean, onSelect: () => void }) {
   const startTime = new Date(event.startTime);
+
+  let statusBadge;
+  if (event.status === 'Live') {
+    statusBadge = (
+      <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider flex items-center gap-1">
+        <span className="animate-pulse">●</span> LIVE
+      </span>
+    );
+  } else if (event.status === 'Delayed') {
+    statusBadge = (
+      <span className="bg-yellow-500 text-black text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider flex items-center gap-1 border border-yellow-600">
+        <span className="animate-pulse text-red-600">●</span> DELAYED
+      </span>
+    );
+  } else if (event.status === 'Ended') {
+    statusBadge = (
+      <span className="bg-gray-700 text-gray-300 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider border border-gray-600">
+        ENDED
+      </span>
+    );
+  } else {
+    statusBadge = (
+      <span className="bg-blue-600/20 text-blue-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider border border-blue-500/30">
+        {event.status}
+      </span>
+    );
+  }
 
   return (
     <div onClick={onSelect} className="cursor-pointer group block bg-gray-900 rounded-xl overflow-hidden border border-gray-800 hover:border-blue-500 transition-all hover:shadow-lg hover:shadow-blue-500/20">
@@ -140,15 +201,7 @@ function EventCard({ event, isLive = false, onSelect }: { event: any, isLive?: b
 
         {/* Status Badge */}
         <div className="absolute top-2 right-2">
-          {isLive ? (
-            <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider flex items-center gap-1">
-              <span className="animate-pulse">●</span> {event.status}
-            </span>
-          ) : (
-            <span className="bg-blue-600/20 text-blue-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider border border-blue-500/30">
-              {event.status}
-            </span>
-          )}
+          {statusBadge}
         </div>
       </div>
 
