@@ -6,22 +6,41 @@ import VideoPlayer from '@/components/Live/VideoPlayer';
 import ScoreCard from '@/components/Live/ScoreCard';
 import Countdown from '@/components/Live/Countdown';
 import { FaTv, FaLock } from 'react-icons/fa';
+import useSWR from 'swr';
 
-export default function EventClientWrapper({ event }: { event: any }) {
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+export default function EventClientWrapper({ event: initialEvent }: { event: any }) {
     const searchParams = useSearchParams();
     const initialChannelIndex = parseInt(searchParams.get('channel') || '0');
 
+    // Poll for event updates (e.g., status change to 'Ended') every 1 minute
+    const { data } = useSWR(`/api/events/${initialEvent._id}`, fetcher, {
+        refreshInterval: 60000,
+        fallbackData: { success: true, data: initialEvent }
+    });
+
+    const event = data?.data || initialEvent;
+
     // Ensure index is valid
-    const safeIndex = (initialChannelIndex >= 0 && initialChannelIndex < event.streamLinks.length)
+    const safeIndex = (initialChannelIndex >= 0 && initialChannelIndex < (event.streamLinks?.length || 0))
         ? initialChannelIndex
         : 0;
 
-    const [currentLink, setCurrentLink] = useState(event.streamLinks[safeIndex]?.url || '');
+    const [currentLink, setCurrentLink] = useState(event.streamLinks?.[safeIndex]?.url || '');
     const [showPlayer, setShowPlayer] = useState(false);
     const [statusLabel, setStatusLabel] = useState<string>('');
     const [targetDate] = useState(new Date(event.startTime));
     const [matchStarted, setMatchStarted] = useState(false);
     const [showBanner, setShowBanner] = useState(true);
+
+    useEffect(() => {
+        // If event ends while watching, update local state to hide player or show ended message
+        if (event.status === 'Ended') {
+            setShowPlayer(false);
+            setStatusLabel('ENDED');
+        }
+    }, [event.status]);
 
     useEffect(() => {
         if (matchStarted) {
@@ -37,7 +56,10 @@ export default function EventClientWrapper({ event }: { event: any }) {
             const diff = targetDate.getTime() - now.getTime();
             const minutesLeft = diff / (1000 * 60);
 
-            if (event.status === 'Live' || event.status === 'Delayed') {
+            if (event.status === 'Ended') {
+                setShowPlayer(false);
+                setStatusLabel('ENDED');
+            } else if (event.status === 'Live' || event.status === 'Delayed') {
                 setShowPlayer(true);
                 setStatusLabel('LIVE');
             } else if (minutesLeft <= 35) {
@@ -75,10 +97,15 @@ export default function EventClientWrapper({ event }: { event: any }) {
                         🔴 LIVE
                     </div>
                 )}
+                {statusLabel === 'ENDED' && (
+                    <div className="bg-gray-600 px-4 py-2 rounded font-bold text-sm tracking-widest text-gray-300">
+                        ENDED
+                    </div>
+                )}
             </div>
 
             {/* Channel Buttons (Only if player is shown) */}
-            {showPlayer && event.streamLinks.length > 0 && (
+            {showPlayer && event.streamLinks?.length > 0 && (
                 <div className="flex flex-wrap gap-3 justify-center md:justify-start">
                     {event.streamLinks.map((link: any, index: number) => (
                         <button
@@ -98,7 +125,16 @@ export default function EventClientWrapper({ event }: { event: any }) {
             {/* Main Content Area: Player or Countdown */}
             <div className="bg-black/50 rounded-xl overflow-hidden border border-gray-800 min-h-[500px] relative">
 
-                {!showPlayer ? (
+                {statusLabel === 'ENDED' ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8">
+                        <FaLock className="text-6xl text-gray-600 mb-6" />
+                        <h2 className="text-2xl font-bold mb-2">Stream Ended</h2>
+                        <p className="text-gray-400 mb-8 max-w-md">This event has concluded. Thank you for watching.</p>
+                        <a href="/" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded transition">
+                            Back to Home
+                        </a>
+                    </div>
+                ) : !showPlayer ? (
                     // State 1: Locked
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8">
                         <FaLock className="text-6xl text-gray-600 mb-6" />
