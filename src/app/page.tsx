@@ -162,7 +162,7 @@ function EventCard({ event, isLive = false, onSelect }: { event: any, isLive?: b
     );
   } else if (event.status === 'Ended') {
     statusBadge = (
-      <span className="bg-gray-700 text-gray-300 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider border border-gray-600 shadow-sm">
+      <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider border border-red-500 shadow-sm">
         ENDED
       </span>
     );

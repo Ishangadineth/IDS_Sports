@@ -35,7 +35,7 @@ export default function VideoPlayer({ streamUrl }: VideoPlayerProps) {
                 // sandbox="allow-scripts allow-same-origin allow-presentation" 
                 // Note: sandbox might break some streams if they need more permissions. 
                 // User explicitly asked for these.
-                sandbox="allow-scripts allow-same-origin allow-presentation"
+                sandbox="allow-scripts allow-same-origin allow-presentation allow-orientation-lock"
                 className="w-full h-full"
             />
 
