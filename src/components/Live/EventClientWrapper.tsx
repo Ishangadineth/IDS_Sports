@@ -11,31 +11,7 @@ export default function EventClientWrapper({ event: initialEvent }: { event: any
     const searchParams = useSearchParams();
     const initialChannelIndex = parseInt(searchParams.get('channel') || '0');
 
-    // Smart Polling: Poll less frequently if far from end time, more frequently if close
-    const now = new Date().getTime();
-    const endTime = initialEvent.endTime ? new Date(initialEvent.endTime).getTime() : null;
-    let refreshInterval = 300000; // Default: 5 minutes (save resources)
-
-    if (endTime) {
-        const timeUntilEnd = endTime - now;
-        if (timeUntilEnd < 15 * 60 * 1000 && timeUntilEnd > -15 * 60 * 1000) {
-            // If within 15 mins before or after end: Poll every 1 minute
-            refreshInterval = 60000;
-        } else if (timeUntilEnd <= -15 * 60 * 1000) {
-            // Long after end: Stop polling or poll very slowly
-            refreshInterval = 0;
-        }
-    } else {
-        // No end time set? Poll every 2 minutes just in case
-        refreshInterval = 120000;
-    }
-
-    const { data } = useSWR(`/api/events/${initialEvent._id}`, fetcher, {
-        refreshInterval: refreshInterval,
-        fallbackData: { success: true, data: initialEvent }
-    });
-
-    const event = data?.data || initialEvent;
+    const event = initialEvent;
 
     // Ensure index is valid
     const safeIndex = (initialChannelIndex >= 0 && initialChannelIndex < (event.streamLinks?.length || 0))
