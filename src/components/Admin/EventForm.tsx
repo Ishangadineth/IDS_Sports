@@ -9,6 +9,15 @@ interface EventFormProps {
     isEdit?: boolean;
 }
 
+// Timezone offsets in minutes (Timezone -> UTC)
+// e.g., Colombo is UTC+5:30, so specific time - 5.5h = UTC
+const TIMEZONE_OFFSETS: { [key: string]: number } = {
+    'Asia/Colombo': 330, // +5:30
+    'Asia/Dubai': 240,   // +4:00
+    'Europe/London': 0,  // +0:00 (Standard)
+    'UTC': 0
+};
+
 export default function EventForm({ initialData, isEdit = false }: EventFormProps) {
     const router = useRouter();
     const [formData, setFormData] = useState({
@@ -17,7 +26,7 @@ export default function EventForm({ initialData, isEdit = false }: EventFormProp
         teamA: { name: '', logo: '' },
         teamB: { name: '', logo: '' },
         startTime: '',
-        timezone: 'Asia/Colombo', // Default to Sri Lanka as per user context
+        timezone: 'Asia/Colombo', // Default
         status: 'Scheduled',
         apiMatchId: '',
         useAutomatedScore: false,
@@ -25,18 +34,34 @@ export default function EventForm({ initialData, isEdit = false }: EventFormProp
         streamLinks: [{ name: 'Main Link', url: '' }],
     });
 
+    // Helper: Convert UTC Date to Local Time String (YYYY-MM-DDTHH:mm) for Input
+    const getLocalISOString = (btcDateString: string, timezone: string) => {
+        const utcDate = new Date(btcDateString);
+        const offsetMinutes = TIMEZONE_OFFSETS[timezone] || 0;
+
+        // Add offset to get "Wall Clock" time in that timezone represented as a Date object
+        const localDate = new Date(utcDate.getTime() + offsetMinutes * 60 * 1000);
+        return localDate.toISOString().slice(0, 16);
+    };
+
+    // Helper: Convert Local Input String to UTC Date Object for Saving
+    const getUTCDateFromLocal = (localTimeString: string, timezone: string) => {
+        // Treat input string as if it's UTC first to preserve numbers (e.g. 15:00)
+        const tempDate = new Date(localTimeString + ':00Z');
+        const offsetMinutes = TIMEZONE_OFFSETS[timezone] || 0;
+
+        // Subtract offset to get back to real UTC
+        return new Date(tempDate.getTime() - offsetMinutes * 60 * 1000);
+    };
+
     useEffect(() => {
         if (initialData) {
-            // Convert UTC start time to selected timezone string if possible, 
-            // or just keep it as ISO string for manipulation. 
-            // For simplicity in this input, we might need to convert to 'YYYY-MM-DDTHH:mm'.
-            const date = new Date(initialData.startTime);
-            // specific logic to format date for datetime-local input based on timezone would go here
-            // For MVP, we will stick to local browser time for the input value
-            const formattedDate = date.toISOString().slice(0, 16);
+            const tz = initialData.timezone || 'Asia/Colombo';
+            const formattedDate = getLocalISOString(initialData.startTime, tz);
 
             setFormData({
                 ...initialData,
+                timezone: tz,
                 startTime: formattedDate,
                 streamLinks: initialData.streamLinks.length > 0 ? initialData.streamLinks : [{ name: 'Main Link', url: '' }]
             });
@@ -80,13 +105,13 @@ export default function EventForm({ initialData, isEdit = false }: EventFormProp
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Timezone handling: In a real robust app, we would use date-fns-tz or dayjs to convert 
-        // the input time (considered as 'timezone' time) to UTC.
-        // For now, we will assume the input time IS in the selected timezone relative to UTC, 
-        // or just standard ISO if 'local' is used. 
-        // Let's send the ISO string; the backend expects a Date object.
+        // Convert the "Wall Clock" input time to UTC based on selected Timezone
+        const utcDate = getUTCDateFromLocal(formData.startTime, formData.timezone);
 
-        const payload = { ...formData };
+        const payload = {
+            ...formData,
+            startTime: utcDate.toISOString() // Send proper UTC string
+        };
 
         const method = isEdit ? 'PUT' : 'POST';
         const url = isEdit ? `/api/events/${initialData._id}` : '/api/events';
@@ -100,7 +125,7 @@ export default function EventForm({ initialData, isEdit = false }: EventFormProp
 
             if (res.ok) {
                 router.push('/adminaaids/dashboard');
-                router.refresh(); // Refresh server components
+                router.refresh();
             } else {
                 alert('Failed to save event');
             }
@@ -145,7 +170,7 @@ export default function EventForm({ initialData, isEdit = false }: EventFormProp
             {/* Timing */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                    <label className="block text-sm font-medium mb-1">Start Time</label>
+                    <label className="block text-sm font-medium mb-1">Start Time (Adjusted to Timezone)</label>
                     <input type="datetime-local" name="startTime" value={formData.startTime} onChange={handleChange} className="w-full bg-gray-700 p-2 rounded" required />
                 </div>
                 <div>
