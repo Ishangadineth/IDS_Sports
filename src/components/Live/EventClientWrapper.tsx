@@ -20,6 +20,15 @@ export default function EventClientWrapper({ event }: { event: any }) {
     const [showPlayer, setShowPlayer] = useState(false);
     const [statusLabel, setStatusLabel] = useState<string>('');
     const [targetDate] = useState(new Date(event.startTime));
+    const [matchStarted, setMatchStarted] = useState(false);
+    const [showBanner, setShowBanner] = useState(true);
+
+    useEffect(() => {
+        if (matchStarted) {
+            const timer = setTimeout(() => setShowBanner(false), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [matchStarted]);
 
     // 35-Minute Logic
     useEffect(() => {
@@ -101,9 +110,15 @@ export default function EventClientWrapper({ event }: { event: any }) {
                     // State 2 & 3: Player
                     <div className="relative">
                         {/* Pre-show Countdown Overlay (Within 35 mins but not started) */}
-                        {statusLabel === 'PRE_SHOW' && (
-                            <div className="bg-blue-900/90 text-white py-2 text-center font-bold text-sm z-10 w-full">
-                                Typically starts soon. <Countdown targetDate={event.startTime} label="Event Starts in:" minimal={true} />
+                        {statusLabel === 'PRE_SHOW' && showBanner && (
+                            <div className="bg-blue-900/90 text-white py-2 text-center font-bold text-sm z-10 w-full transition-all duration-500">
+                                {matchStarted ? (
+                                    <span className="text-green-400 animate-pulse text-lg">Match එක දැන් පටන්ගත්තා</span>
+                                ) : (
+                                    <>
+                                        Typically starts soon. <Countdown targetDate={event.startTime} label="Event Starts in:" minimal={true} onComplete={() => setMatchStarted(true)} />
+                                    </>
+                                )}
                             </div>
                         )}
 
