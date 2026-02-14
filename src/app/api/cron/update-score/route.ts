@@ -32,7 +32,7 @@ export async function GET(req: Request) {
         }
 
         const API_HOST = 'cricbuzz-cricket.p.rapidapi.com';
-        const results = [];
+        const results: any[] = [];
 
         // 2. Loop through all match IDs
         await Promise.all(matchIds.map(async (matchId: string) => {
