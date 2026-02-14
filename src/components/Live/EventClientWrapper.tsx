@@ -113,7 +113,8 @@ export default function EventClientWrapper({ event }: { event: any }) {
             </div>
 
             {/* Scorecard */}
-            <ScoreCard event={event} />
+            {/* Scorecard */}
+            {/* <ScoreCard event={event} /> */}
 
         </div>
     );
