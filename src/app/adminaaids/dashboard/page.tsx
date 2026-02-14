@@ -3,7 +3,7 @@
 import useSWR, { mutate } from 'swr';
 import Link from 'next/link';
 import { useState } from 'react';
-import { FaPlus, FaEdit, FaTrash, FaCloudRain } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaCloudRain, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
@@ -50,6 +50,23 @@ export default function Dashboard() {
         }
     };
 
+    const handleToggleHide = async (event: any) => {
+        try {
+            const res = await fetch(`/api/events/${event._id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isHidden: !event.isHidden }),
+            });
+            if (res.ok) {
+                mutate('/api/events');
+            } else {
+                alert('Failed to update visibility');
+            }
+        } catch (err) {
+            alert('Error updating visibility');
+        }
+    };
+
     if (error) return <div>failed to load</div>;
     if (isLoading) return <div>loading...</div>;
 
@@ -86,6 +103,13 @@ export default function Dashboard() {
                                 title="Rain Delay / Update Status"
                             >
                                 <FaCloudRain />
+                            </button>
+                            <button
+                                onClick={() => handleToggleHide(event)}
+                                className={`p-2 rounded text-white ${event.isHidden ? 'bg-gray-600 hover:bg-gray-500' : 'bg-teal-600 hover:bg-teal-700'}`}
+                                title={event.isHidden ? "Unhide Event" : "Hide Event"}
+                            >
+                                {event.isHidden ? <FaEyeSlash /> : <FaEye />}
                             </button>
                             <Link
                                 href={`/adminaaids/dashboard/edit/${event._id}`}

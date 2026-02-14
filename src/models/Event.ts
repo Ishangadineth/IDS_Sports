@@ -49,6 +49,10 @@ const EventSchema = new mongoose.Schema({
         status: String, // e.g., "Innings Break"
     },
     streamLinks: [StreamLinkSchema],
+    isHidden: {
+        type: Boolean,
+        default: false,
+    },
 }, { timestamps: true });
 
 export default mongoose.models.Event || mongoose.model('Event', EventSchema);

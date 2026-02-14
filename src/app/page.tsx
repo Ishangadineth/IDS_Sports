@@ -25,6 +25,9 @@ export default function Home() {
 
   // Filter events
   const visibleEvents = allEvents.filter((event: any) => {
+    // 0. Hide explicit hidden events
+    if (event.isHidden) return false;
+
     // 1. Show 'Live' and 'Delayed' events always
     if (event.status === 'Live' || event.status === 'Delayed') return true;
 

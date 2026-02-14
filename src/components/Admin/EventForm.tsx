@@ -33,7 +33,9 @@ export default function EventForm({ initialData, isEdit = false }: EventFormProp
         apiMatchId: '',
         useAutomatedScore: false,
         manualScore: { teamA: '', teamB: '', status: '' },
+
         streamLinks: [{ name: 'Main Link', url: '' }],
+        isHidden: false, // New field
     });
 
     // Helper: Convert UTC Date to Local Time String (YYYY-MM-DDTHH:mm) for Input
@@ -204,6 +206,18 @@ export default function EventForm({ initialData, isEdit = false }: EventFormProp
                         <option value="Delayed">Delayed (Rain)</option>
                         <option value="Ended">Ended</option>
                     </select>
+                </div>
+                <div className="flex items-center h-full pt-6">
+                    <label className="flex items-center space-x-2 cursor-pointer bg-gray-700 px-4 py-2 rounded w-full hover:bg-gray-600 transition">
+                        <input
+                            type="checkbox"
+                            name="isHidden"
+                            checked={formData.isHidden}
+                            onChange={handleChange}
+                            className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                        />
+                        <span className="font-medium text-white">Hide Event (Visible only to Admin)</span>
+                    </label>
                 </div>
             </div>
 
