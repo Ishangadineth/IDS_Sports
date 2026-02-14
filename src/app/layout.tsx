@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google"; // Keeping default fonts f
 import "./globals.css";
 import AntiDebug from "@/components/Security/AntiDebug";
 import Link from "next/link";
+import Script from "next/script";
 import { FaTelegram, FaFacebook } from "react-icons/fa";
 
 const geistSans = Geist({
@@ -42,6 +43,14 @@ export default function RootLayout({
       >
         <AntiDebug />
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || "G-S3MTWH8KWV"} />
+
+        {/* Monetag MultiTag Script */}
+        <Script
+          src="https://quge5.com/88/tag.min.js"
+          data-zone="211266"
+          strategy="afterInteractive"
+          data-cfasync="false"
+        />
 
         {/* Navbar */}
         <header className="bg-black/50 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50">
