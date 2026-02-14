@@ -113,7 +113,7 @@ export default function EventClientWrapper({ event }: { event: any }) {
                         {statusLabel === 'PRE_SHOW' && showBanner && (
                             <div className="bg-blue-900/90 text-white py-2 text-center font-bold text-sm z-10 w-full transition-all duration-500">
                                 {matchStarted ? (
-                                    <span className="text-green-400 animate-pulse text-lg">Match එක දැන් පටන්ගත්තා</span>
+                                    <span className="text-green-400 animate-pulse text-lg">Match Started Now</span>
                                 ) : (
                                     <>
                                         Typically starts soon. <Countdown targetDate={event.startTime} label="Event Starts in:" minimal={true} onComplete={() => setMatchStarted(true)} />

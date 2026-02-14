@@ -21,6 +21,17 @@ export async function GET() {
     await dbConnect();
     try {
         const events = await Event.find({}).sort({ startTime: 1 });
+
+        // Auto-update status to 'Live' if start time has passed and status is 'Scheduled'
+        const now = new Date();
+        const updates = events.map(async (event: any) => {
+            if (event.status === 'Scheduled' && new Date(event.startTime) <= now) {
+                event.status = 'Live';
+                await Event.findByIdAndUpdate(event._id, { status: 'Live' });
+            }
+        });
+        await Promise.all(updates);
+
         return NextResponse.json({ success: true, data: events });
     } catch (error) {
         return NextResponse.json({ success: false, error: 'Failed to fetch events' }, { status: 400 });
