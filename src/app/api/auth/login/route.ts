@@ -3,6 +3,7 @@ import dbConnect from '@/lib/db';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { logActivity } from '@/lib/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 
