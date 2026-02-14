@@ -1,26 +1,39 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* T20 World Cup Inspired Palette */
+  --background: #0a0e2e; /* Deep Royal Blue/Purple */
+  --foreground: #ffffff; /* White text */
+  
+  --primary: #ff9900; /* Vibrant Orange (TICKETS) */
+  --secondary: #ff007f; /* Hot Pink (Button) */
+  --accent: #00d2ff; /* Cyan Blue Highlights */
+  
+  --card-bg: #111645; /* Slightly lighter blue for cards */
+  --card-border: #2a3068; /* Border between sections */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  
+  --color-card: var(--card-bg);
+  --color-card-border: var(--card-border);
+  
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  /* Add subtle gradient background */
+  background-image: radial-gradient(circle at top right, #1a237e 0%, transparent 40%),
+                    radial-gradient(circle at bottom left, #ff007f 0%, transparent 50%);
+  background-attachment: fixed;
 }

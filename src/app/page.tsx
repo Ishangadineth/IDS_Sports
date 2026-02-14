@@ -150,72 +150,104 @@ function EventCard({ event, isLive = false, onSelect }: { event: any, isLive?: b
   let statusBadge;
   if (event.status === 'Live') {
     statusBadge = (
-      <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider flex items-center gap-1">
+      <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider flex items-center gap-1 shadow-sm">
         <span className="animate-pulse">●</span> LIVE
       </span>
     );
   } else if (event.status === 'Delayed') {
     statusBadge = (
-      <span className="bg-yellow-500 text-black text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider flex items-center gap-1 border border-yellow-600">
+      <span className="bg-yellow-500 text-black text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider flex items-center gap-1 border border-yellow-600 shadow-sm">
         <span className="animate-pulse text-red-600">●</span> DELAYED
       </span>
     );
   } else if (event.status === 'Ended') {
     statusBadge = (
-      <span className="bg-gray-700 text-gray-300 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider border border-gray-600">
+      <span className="bg-gray-700 text-gray-300 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider border border-gray-600 shadow-sm">
         ENDED
       </span>
     );
   } else {
     statusBadge = (
-      <span className="bg-blue-600/20 text-blue-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider border border-blue-500/30">
+      <span className="bg-blue-600/20 text-blue-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider border border-blue-500/30 shadow-sm backdrop-blur-sm">
         {event.status}
       </span>
     );
   }
 
+  // Check if we have a cover image
+  const hasCover = !!event.coverImage;
+
   return (
-    <div onClick={onSelect} className="cursor-pointer group block bg-gray-900 rounded-xl overflow-hidden border border-gray-800 hover:border-blue-500 transition-all hover:shadow-lg hover:shadow-blue-500/20">
-      <div className="relative h-40 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-between px-6 pt-4">
-        {/* Team A */}
-        <div className="flex flex-col items-center">
-          {event.teamA?.logo ? (
-            <img src={event.teamA.logo} alt={event.teamA.name} className="w-16 h-16 object-contain mb-2 drop-shadow-lg" />
-          ) : (
-            <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center font-bold text-xl">{event.teamA?.name?.[0]}</div>
-          )}
-          <span className="font-bold text-sm text-center line-clamp-1">{event.teamA?.name}</span>
-        </div>
+    <div onClick={onSelect} className="cursor-pointer group block bg-gray-900 rounded-xl overflow-hidden border border-gray-800 hover:border-blue-500 transition-all hover:shadow-lg hover:shadow-blue-500/20 relative">
 
-        <div className="text-gray-500 font-bold text-xl italic opacity-50">VS</div>
+      {/* Card Header / Image Area */}
+      <div className={`relative h-48 ${hasCover ? '' : 'bg-gradient-to-br from-gray-800 to-gray-900'} flex items-center justify-center overflow-hidden`}>
 
-        {/* Team B */}
-        <div className="flex flex-col items-center">
-          {event.teamB?.logo ? (
-            <img src={event.teamB.logo} alt={event.teamB.name} className="w-16 h-16 object-contain mb-2 drop-shadow-lg" />
-          ) : (
-            <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center font-bold text-xl">{event.teamB?.name?.[0]}</div>
-          )}
-          <span className="font-bold text-sm text-center line-clamp-1">{event.teamB?.name}</span>
-        </div>
+        {/* Cover Image or Default Background */}
+        {hasCover ? (
+          <>
+            <img src={event.coverImage} alt={event.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+            {/* Overlay Gradient for Text Readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent opacity-90"></div>
+            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors"></div>
+          </>
+        ) : (
+          // Default Team Layout if no cover image
+          <div className="flex items-center justify-between w-full px-6">
+            <div className="flex flex-col items-center">
+              {event.teamA?.logo ? (
+                <img src={event.teamA.logo} alt={event.teamA.name} className="w-16 h-16 object-contain mb-2 drop-shadow-lg" />
+              ) : (
+                <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center font-bold text-xl">{event.teamA?.name?.[0]}</div>
+              )}
+            </div>
 
-        {/* Status Badge */}
-        <div className="absolute top-2 right-2">
+            <div className="text-gray-500 font-bold text-xl italic opacity-50">VS</div>
+
+            <div className="flex flex-col items-center">
+              {event.teamB?.logo ? (
+                <img src={event.teamB.logo} alt={event.teamB.name} className="w-16 h-16 object-contain mb-2 drop-shadow-lg" />
+              ) : (
+                <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center font-bold text-xl">{event.teamB?.name?.[0]}</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Status Badge (Top Right) */}
+        <div className="absolute top-3 right-3 z-10">
           {statusBadge}
         </div>
+
+        {/* Play Button Overlay (Visible on Hover if Live/Delayed) */}
+        {(event.status === 'Live' || event.status === 'Delayed') && (
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+            <div className="bg-white/20 backdrop-blur-sm p-3 rounded-full border border-white/30 text-white">
+              <FaPlayCircle size={40} />
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="p-4">
-        <h3 className="font-bold text-lg mb-1 group-hover:text-blue-400 transition line-clamp-1">{event.title}</h3>
-        <p className="text-gray-400 text-sm mb-4 line-clamp-2">{event.description}</p>
+      {/* Card Content */}
+      <div className="p-4 relative z-20 bg-gray-900">
 
-        <div className="flex items-center justify-between text-sm text-gray-500 border-t border-gray-800 pt-3">
-          <div className="flex items-center gap-2">
-            <FaCalendarAlt />
+        {/* Title & Teams (If cover image exists, showing teams in text might be nice or just title) */}
+        <div className="mb-3">
+          <h3 className="font-bold text-lg leading-tight group-hover:text-blue-400 transition line-clamp-2">{event.title}</h3>
+          <p className="text-gray-400 text-xs mt-1">
+            {event.teamA?.name} vs {event.teamB?.name}
+          </p>
+        </div>
+
+        {/* Footer Meta */}
+        <div className="flex items-center justify-between text-xs text-gray-500 border-t border-gray-800 pt-3">
+          <div className="flex items-center gap-1.5">
+            <FaCalendarAlt className="text-blue-500/70" />
             <span>{startTime.toLocaleDateString()}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <FaClock />
+          <div className="flex items-center gap-1.5">
+            <FaClock className="text-blue-500/70" />
             <span>{startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
           </div>
         </div>

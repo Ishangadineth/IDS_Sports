@@ -13,6 +13,9 @@ const EventSchema = new mongoose.Schema({
     description: {
         type: String,
     },
+    coverImage: {
+        type: String, // URL for the event thumbnail/banner
+    },
     teamA: {
         name: String,
         logo: String,

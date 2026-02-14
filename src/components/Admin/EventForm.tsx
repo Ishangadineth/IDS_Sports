@@ -23,6 +23,7 @@ export default function EventForm({ initialData, isEdit = false }: EventFormProp
     const [formData, setFormData] = useState({
         title: '',
         description: '',
+        coverImage: '', // New field
         teamA: { name: '', logo: '' },
         teamB: { name: '', logo: '' },
         startTime: '',
@@ -151,6 +152,10 @@ export default function EventForm({ initialData, isEdit = false }: EventFormProp
                 <div>
                     <label className="block text-sm font-medium mb-1">Description</label>
                     <input name="description" value={formData.description} onChange={handleChange} className="w-full bg-gray-700 p-2 rounded" />
+                </div>
+                <div className="md:col-span-2">
+                    <label className="block text-sm font-medium mb-1">Cover Image URL (Thumbnail)</label>
+                    <input name="coverImage" value={formData.coverImage} onChange={handleChange} className="w-full bg-gray-700 p-2 rounded" placeholder="https://example.com/banner.jpg" />
                 </div>
             </div>
 
