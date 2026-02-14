@@ -18,6 +18,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "IDS Sports - Live Streaming",
   description: "Watch live sports events on IDS Sports.",
+  icons: {
+    icon: '/icon.png',
+    shortcut: '/favicon.ico',
+    apple: '/icon.png',
+  },
 };
 
 import GoogleAnalytics from "@/components/GoogleAnalytics";
