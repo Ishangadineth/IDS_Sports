@@ -24,6 +24,9 @@ export default function AdminLayout({
                     <Link href="/adminaaids/dashboard" className="px-3 py-2 hover:bg-gray-700 rounded transition-colors text-gray-300 hover:text-white">
                         Dashboard
                     </Link>
+                    <Link href="/adminaaids/dashboard/analytics" className="px-3 py-2 hover:bg-gray-700 rounded transition-colors text-green-400 font-bold hover:text-green-300">
+                        Analytics 📊
+                    </Link>
                     <Link href="/adminaaids/dashboard/moderators" className="px-3 py-2 hover:bg-gray-700 rounded transition-colors text-gray-300 hover:text-white">
                         Moderators
                     </Link>
