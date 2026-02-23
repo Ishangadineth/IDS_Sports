@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDS Sports - Player Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0f0f0f;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: sans-serif;
+        }
+
+        h2 {
+            color: white;
+            margin-bottom: 16px;
+            font-size: 18px;
+            opacity: 0.7;
+        }
+
+        /* ===== PLAYER WRAPPER ===== */
+        #player-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            height: 500px;
+            background: black;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #333;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+        }
+
+        /* ===== IFRAME ===== */
+        #player-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* ===== TAP TO WATCH OVERLAY ===== */
+        #tap-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            transition: opacity 0.3s ease;
+        }
+
+        #tap-overlay:hover .play-btn {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.08);
+        }
+
+        .play-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.12);
+            border: 2px solid rgba(255, 255, 255, 0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        .play-btn svg {
+            margin-left: 4px;
+            /* optical center for triangle */
+        }
+
+        #tap-overlay p.main-text {
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        #tap-overlay p.sub-text {
+            color: rgba(255, 255, 255, 0.45);
+            font-size: 12px;
+            margin-top: 6px;
+        }
+
+        /* ===== FULLSCREEN BUTTON ===== */
+        #fullscreen-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 20;
+            background: rgba(0, 0, 0, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-radius: 6px;
+            padding: 6px 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        #fullscreen-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* ===== WATERMARK ===== */
+        #watermark {
+            position: absolute;
+            bottom: 8px;
+            left: 10px;
+            color: rgba(255, 255, 255, 0.18);
+            font-size: 11px;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 10;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>IDS Sports — Player Test</h2>
+
+    <div id="player-wrapper">
+
+        <!-- IFRAME - starts with NO src, loads only after user tap -->
+        <iframe id="player-iframe" src="" scrolling="no" allowfullscreen allow="autoplay; encrypted-media; fullscreen"
+            sandbox="allow-scripts allow-same-origin allow-presentation allow-orientation-lock allow-popups"></iframe>
+
+        <!-- TAP TO WATCH OVERLAY -->
+        <div id="tap-overlay" onclick="startStream()">
+            <div class="play-btn">
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="white">
+                    <polygon points="12,8 30,18 12,28" />
+                </svg>
+            </div>
+            <p class="main-text">TAP TO WATCH LIVE</p>
+            <p class="sub-text">Tap once to enable sound</p>
+        </div>
+
+        <!-- FULLSCREEN BUTTON -->
+        <button id="fullscreen-btn" onclick="toggleFullscreen()" title="Fullscreen">
+            <svg id="fs-icon-expand" width="18" height="18" viewBox="0 0 24 24" fill="white">
+                <path d="M7 14H5v5h5v-2H7zm-2-4h2V7h3V5H5zm12 7h-3v2h5v-5h-2zM14 5v2h3v3h2V5z" />
+            </svg>
+            <svg id="fs-icon-shrink" width="18" height="18" viewBox="0 0 24 24" fill="white" style="display:none;">
+                <path d="M5 16h3v3h2v-5H5zm3-8H5v2h5V5H8zm6 11h2v-3h3v-2h-5zm2-11V5h-2v5h5V8z" />
+            </svg>
+        </button>
+
+        <!-- UNMUTE HINT -->
+        <div id="unmute-hint"
+            style="display:none; position:absolute; bottom:50px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); color:white; padding:8px 18px; border-radius:20px; font-size:13px; z-index:15; white-space:nowrap; border:1px solid rgba(255,255,255,0.25); pointer-events:none; transition:opacity 0.6s;">
+            🔊 Click on the player to unmute
+        </div>
+
+        <!-- WATERMARK -->
+        <div id="watermark">IDS Sports</div>
+
+    </div>
+
+    <script>
+        function startStream() {
+            const overlay = document.getElementById('tap-overlay');
+            const iframe = document.getElementById('player-iframe');
+            const hint = document.getElementById('unmute-hint');
+
+            // Hide overlay
+            overlay.style.opacity = '0';
+            setTimeout(() => { overlay.style.display = 'none'; }, 300);
+
+            // Load stream for first time inside user gesture (browser may allow audio)
+            iframe.src = 'https://streamcrichd.com/update/willowextra.php';
+
+            // Show unmute hint then fade after 4s
+            hint.style.display = 'block';
+            hint.style.opacity = '1';
+            setTimeout(() => {
+                hint.style.opacity = '0';
+                setTimeout(() => { hint.style.display = 'none'; }, 700);
+            }, 4000);
+        }
+
+        function toggleFullscreen() {
+            const wrapper = document.getElementById('player-wrapper');
+            const expandIcon = document.getElementById('fs-icon-expand');
+            const shrinkIcon = document.getElementById('fs-icon-shrink');
+
+            if (!document.fullscreenElement) {
+                wrapper.requestFullscreen();
+                expandIcon.style.display = 'none';
+                shrinkIcon.style.display = 'block';
+            } else {
+                document.exitFullscreen();
+                expandIcon.style.display = 'block';
+                shrinkIcon.style.display = 'none';
+            }
+        }
+
+        // Sync fullscreen icon when user presses Escape key
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                document.getElementById('fs-icon-expand').style.display = 'block';
+                document.getElementById('fs-icon-shrink').style.display = 'none';
+            }
+        });
+    </script>
+
+</body>
+
+</html>

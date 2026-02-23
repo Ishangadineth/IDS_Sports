@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import VideoPlayer from '@/components/Live/VideoPlayer';
+import LivePlayerAndChat from '@/components/Live/LivePlayerAndChat';
+import TourGuide from '@/components/Live/TourGuide';
 import ScoreCard from '@/components/Live/ScoreCard';
 import Countdown from '@/components/Live/Countdown';
 import { FaTv, FaLock } from 'react-icons/fa';
@@ -143,7 +144,8 @@ export default function EventClientWrapper({ event: initialEvent }: { event: any
                             </div>
                         )}
 
-                        <VideoPlayer streamUrl={currentLink} />
+                        <LivePlayerAndChat streamUrl={currentLink} eventId={event._id} eventTitle={event.title} />
+                        <TourGuide />
                     </div>
                 )}
             </div>
