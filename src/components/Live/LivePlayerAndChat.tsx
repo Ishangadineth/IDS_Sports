@@ -265,7 +265,12 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
     };
 
     const updateName = (e: React.FocusEvent<HTMLInputElement>) => {
-        const newName = e.target.value.trim();
+        let newName = e.target.value.trim();
+        // Remove existing # suffix if user tried to type it manually
+        if (newName.includes('#')) {
+            newName = newName.split('#')[0].trim();
+        }
+
         if (newName && newName.length <= 15) {
             // Prevent users from mimicking Admin name
             if (newName.toLowerCase().includes('ids') || newName.toLowerCase().includes('admin')) {
@@ -273,7 +278,7 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
                 return;
             }
 
-            // Auto append random tag if they change name manually to keep it unique looking
+            // Always append a random tag to keep it unique looking
             const randomNum = Math.floor(100 + Math.random() * 900);
             const finalName = `${newName}#${randomNum}`;
 
@@ -296,7 +301,10 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
                 </div>
 
                 {/* Chat Panel */}
-                <div className={`transition-all duration-300 bg-gray-900 border-l border-gray-800 flex flex-col ${showChat ? 'w-full md:w-1/4 translate-x-0' : 'w-0 translate-x-full overflow-hidden border-none'}`}>
+                <div
+                    className={`transition-all duration-300 bg-gray-900 border-l border-gray-800 flex flex-col ${showChat ? 'w-full md:w-1/4 translate-x-0' : 'w-0 translate-x-full overflow-hidden border-none'}`}
+                    onClick={(e) => e.stopPropagation()} // Prevent ad-clicks inside chat bounds
+                >
                     {showChat && (
                         <>
                             {/* Chat Header */}
@@ -338,11 +346,13 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
                                         maxLength={200}
                                         value={messageInput}
                                         onChange={(e) => setMessageInput(e.target.value)}
+                                        onClick={(e) => e.stopPropagation()}
                                         placeholder="Type a message..."
                                         className="w-full bg-gray-800 text-white rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 border border-gray-700 placeholder-gray-500"
                                     />
                                     <button
                                         type="submit"
+                                        onClick={(e) => e.stopPropagation()}
                                         disabled={!messageInput.trim()}
                                         className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-full px-4 py-2 text-sm font-bold transition shadow-lg shadow-blue-600/20"
                                     >
@@ -366,7 +376,7 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
                                         ) : (
                                             <>
                                                 <strong className="text-gray-300">{userName}</strong>
-                                                <button onClick={() => setIsEditingName(true)} className="text-gray-400 hover:text-blue-400 transition" title="Change Name">
+                                                <button onClick={(e) => { e.stopPropagation(); setIsEditingName(true); }} className="text-gray-400 hover:text-blue-400 transition" title="Change Name">
                                                     <FaEdit />
                                                 </button>
                                             </>
