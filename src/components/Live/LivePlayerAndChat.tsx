@@ -159,19 +159,21 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
         if (!document.fullscreenElement) {
             containerRef.current?.requestFullscreen().then(() => {
                 // Auto rotate to landscape if on mobile
-                if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
-                    window.screen.orientation.lock('landscape').catch((err) => {
+                const orientation = window.screen?.orientation as any;
+                if (orientation && orientation.lock) {
+                    orientation.lock('landscape').catch((err: any) => {
                         console.log("Could not lock orientation", err);
                     });
                 }
-            }).catch(err => {
+            }).catch((err: any) => {
                 console.error(`Error attempting to enable fullscreen: ${err.message}`);
             });
         } else {
             document.exitFullscreen().then(() => {
                 // Unlock orientation on exit
-                if (window.screen && window.screen.orientation && window.screen.orientation.unlock) {
-                    window.screen.orientation.unlock();
+                const orientation = window.screen?.orientation as any;
+                if (orientation && orientation.unlock) {
+                    orientation.unlock();
                 }
             });
         }
