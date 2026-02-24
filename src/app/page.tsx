@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { FaPlayCircle, FaCalendarAlt, FaClock, FaTv, FaTimes } from 'react-icons/fa';
 import Countdown from '@/components/Live/Countdown';
+import TourGuide from '@/components/Live/TourGuide';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -54,6 +55,7 @@ export default function Home() {
 
   return (
     <div className="space-y-12">
+      <TourGuide />
 
       {/* Hero Section / Live & Delayed Events */}
       {liveEvents.length > 0 && (
