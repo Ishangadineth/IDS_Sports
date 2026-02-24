@@ -293,23 +293,27 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
         <div ref={containerRef} className="w-full flex flex-col bg-gray-900 overflow-hidden relative shadow-2xl rounded-xl border border-gray-800">
 
             {/* Main Content Area */}
-            <div className={`flex flex-col md:flex-row w-full transition-all duration-300 ${isFullscreen ? 'h-screen' : 'h-[500px]'}`}>
+            <div className={`flex flex-col md:flex-row w-full relative transition-[height] duration-300 ${isFullscreen ? 'h-screen' : 'h-[30vh] sm:h-[40vh] md:h-[500px]'}`}>
 
                 {/* Video */}
-                <div className={`transition-all duration-300 ${showChat ? 'w-full md:w-3/4' : 'w-full'} h-full`}>
+                <div className={`transition-all duration-300 ${showChat ? 'w-full md:w-3/4' : 'w-full'} h-full bg-black`}>
                     <VideoPlayer streamUrl={streamUrl} />
                 </div>
 
-                {/* Chat Panel */}
+                {/* Chat Panel - Sidebar on Desktop, Overlay on Mobile */}
                 <div
-                    className={`transition-all duration-300 bg-gray-900 border-l border-gray-800 flex flex-col ${showChat ? 'w-full md:w-1/4 translate-x-0 z-50' : 'w-0 translate-x-full overflow-hidden border-none'}`}
+                    className={`transition-transform duration-300 bg-gray-900 border-l border-gray-800 flex flex-col z-40 
+                        ${showChat ? 'translate-x-0' : 'translate-x-full'} 
+                        absolute md:relative top-0 right-0 h-full w-full md:w-1/4
+                    `}
                     onClick={(e) => e.stopPropagation()}
                     onPointerDown={(e) => e.stopPropagation()} // Aggressive ad click block
                 >
+                    {/* Only render content when sliding in/open to prevent hidden interaction */}
                     {showChat && (
                         <>
                             {/* Chat Header */}
-                            <div className="p-3 border-b border-gray-800 flex justify-between items-center bg-gray-950">
+                            <div className="p-3 border-b border-gray-800 flex justify-between items-center bg-gray-950/90 backdrop-blur-md sticky top-0 z-10">
                                 <h3 className="font-bold text-white flex items-center gap-2 text-sm">
                                     <FaCommentDots className="text-blue-500" /> Live Chat
                                 </h3>
