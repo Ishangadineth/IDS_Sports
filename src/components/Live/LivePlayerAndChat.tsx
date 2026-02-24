@@ -302,8 +302,9 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
 
                 {/* Chat Panel */}
                 <div
-                    className={`transition-all duration-300 bg-gray-900 border-l border-gray-800 flex flex-col ${showChat ? 'w-full md:w-1/4 translate-x-0' : 'w-0 translate-x-full overflow-hidden border-none'}`}
-                    onClick={(e) => e.stopPropagation()} // Prevent ad-clicks inside chat bounds
+                    className={`transition-all duration-300 bg-gray-900 border-l border-gray-800 flex flex-col ${showChat ? 'w-full md:w-1/4 translate-x-0 z-50' : 'w-0 translate-x-full overflow-hidden border-none'}`}
+                    onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()} // Aggressive ad click block
                 >
                     {showChat && (
                         <>
@@ -318,7 +319,11 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
                             </div>
 
                             {/* Chat Messages */}
-                            <div className="flex-1 overflow-y-auto p-4 space-y-3 stop-propagation-box relative" onClick={(e) => e.stopPropagation()}>
+                            <div
+                                className="flex-1 overflow-y-auto p-4 space-y-3 relative bg-gray-900"
+                                onClick={(e) => e.stopPropagation()}
+                                onPointerDown={(e) => e.stopPropagation()}
+                            >
                                 <div className="text-center text-gray-500 text-xs my-4 bg-gray-800/50 py-1 rounded-full mx-8">Welcome to Live Chat!</div>
 
                                 {messages.map((msg) => (
@@ -339,7 +344,11 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
                             </div>
 
                             {/* Chat Input */}
-                            <div className="p-3 bg-gray-950 border-t border-gray-800 stop-propagation-box" onClick={(e) => e.stopPropagation()}>
+                            <div
+                                className="p-3 bg-gray-950 border-t border-gray-800"
+                                onClick={(e) => e.stopPropagation()}
+                                onPointerDown={(e) => e.stopPropagation()}
+                            >
                                 <form onSubmit={sendMessage} className="flex gap-2 mb-2">
                                     <input
                                         type="text"
@@ -347,14 +356,16 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
                                         value={messageInput}
                                         onChange={(e) => setMessageInput(e.target.value)}
                                         onClick={(e) => e.stopPropagation()}
+                                        onPointerDown={(e) => e.stopPropagation()}
                                         placeholder="Type a message..."
-                                        className="w-full bg-gray-800 text-white rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 border border-gray-700 placeholder-gray-500"
+                                        className="w-full bg-gray-800 text-white rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 border border-gray-700 placeholder-gray-500 relative z-50"
                                     />
                                     <button
                                         type="submit"
                                         onClick={(e) => e.stopPropagation()}
+                                        onPointerDown={(e) => e.stopPropagation()}
                                         disabled={!messageInput.trim()}
-                                        className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-full px-4 py-2 text-sm font-bold transition shadow-lg shadow-blue-600/20"
+                                        className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-full px-4 py-2 text-sm font-bold transition shadow-lg shadow-blue-600/20 relative z-50"
                                     >
                                         Send
                                     </button>
