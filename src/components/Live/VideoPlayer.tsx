@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 interface VideoPlayerProps {
     streamUrl: string;
@@ -28,6 +28,13 @@ export default function VideoPlayer({ streamUrl }: VideoPlayerProps) {
             setShowHint(false);
         }, 4000); // Hide after 4 seconds
     };
+
+    // Listen for streamUrl changes (when user changes channels)
+    useEffect(() => {
+        if (started && iframeRef.current && iframeRef.current.src !== streamUrl) {
+            iframeRef.current.src = streamUrl;
+        }
+    }, [streamUrl, started]);
 
     if (!streamUrl) {
         return (
