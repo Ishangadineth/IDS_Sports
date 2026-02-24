@@ -441,7 +441,7 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
                             </span>}
                         </div>
                         <span className="hidden sm:inline tracking-wide">{showChat ? 'Close Chat' : 'Live Chat'}</span>
-                    </button
+                    </button>
 
                     <button
                         onClick={toggleFullscreen}
