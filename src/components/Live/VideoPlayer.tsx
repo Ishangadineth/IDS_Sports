@@ -59,7 +59,7 @@ export default function VideoPlayer({ streamUrl }: VideoPlayerProps) {
                 frameBorder="0"
                 allowFullScreen
                 allow="autoplay; encrypted-media; fullscreen"
-                sandbox="allow-scripts allow-same-origin allow-presentation allow-orientation-lock allow-popups"
+                sandbox="allow-scripts allow-same-origin allow-presentation allow-orientation-lock"
                 className="w-full h-full block border-none"
             />
 
