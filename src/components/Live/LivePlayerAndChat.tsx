@@ -431,10 +431,17 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
 
                     <button
                         onClick={toggleChat}
-                        className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold transition shadow-lg ${showChat ? 'bg-blue-600 text-white shadow-blue-600/20' : 'bg-gray-800 hover:bg-gray-700 text-white shadow-black/50'}`}
+                        className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold transition shadow-lg ${showChat ? 'bg-blue-600 text-white shadow-blue-600/20' : 'bg-[#1a202c] hover:bg-[#2d3748] text-white border border-gray-700'}`}
                     >
-                        <FaCommentDots /> <span className="hidden sm:inline">{showChat ? 'Hide' : 'Chat'}</span>
-                    </button>
+                        <div className="relative flex items-center justify-center">
+                            <FaCommentDots className="text-lg" />
+                            {!showChat && <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border border-black"></span>
+                            </span>}
+                        </div>
+                        <span className="hidden sm:inline tracking-wide">{showChat ? 'Close Chat' : 'Live Chat'}</span>
+                    </button
 
                     <button
                         onClick={toggleFullscreen}
