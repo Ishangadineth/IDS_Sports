@@ -30,6 +30,9 @@ export default function AdminLayout({
                     <Link href="/adminaaids/dashboard/moderators" className="px-3 py-2 hover:bg-gray-700 rounded transition-colors text-gray-300 hover:text-white">
                         Moderators
                     </Link>
+                    <Link href="/adminaaids/dashboard/notifications" className="px-3 py-2 hover:bg-gray-700 rounded transition-colors text-blue-400 font-bold hover:text-blue-300">
+                        Notifications 🔔
+                    </Link>
                     <Link href="/adminaaids/dashboard/logs" className="px-3 py-2 hover:bg-gray-700 rounded transition-colors text-gray-300 hover:text-white">
                         Activity Logs
                     </Link>

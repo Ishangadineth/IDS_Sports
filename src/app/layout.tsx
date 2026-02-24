@@ -30,6 +30,7 @@ export const metadata: Metadata = {
 };
 
 import GoogleAnalytics from "@/components/GoogleAnalytics";
+import NotificationBell from "@/components/Notifications/NotificationBell";
 
 export default function RootLayout({
   children,
@@ -62,7 +63,8 @@ export default function RootLayout({
               <Link href="/" className="hover:text-blue-400 transition">Home</Link>
               {/* <Link href="/schedule" className="hover:text-blue-400 transition">Schedule</Link> */}
             </nav>
-            <div className="flex gap-4">
+            <div className="flex items-center gap-4">
+              <NotificationBell />
               <a href="https://t.me/IDS_Sports" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 text-xl"><FaTelegram /></a>
               <a href="https://www.facebook.com/share/1A9D7LCHnw/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-500 text-xl"><FaFacebook /></a>
             </div>
