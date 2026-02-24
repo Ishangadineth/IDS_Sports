@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import VideoPlayer from './VideoPlayer';
 import { FaThumbsUp, FaThumbsDown, FaShare, FaCommentDots, FaEye, FaCheckCircle, FaEdit } from 'react-icons/fa';
 import { database } from '@/lib/firebase';
-import { ref, onValue, set, push, serverTimestamp, increment } from 'firebase/database';
+import { ref, onValue, set, update, push, serverTimestamp, increment } from 'firebase/database';
 
 interface LivePlayerAndChatProps {
     streamUrl: string;
@@ -98,7 +98,7 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
         const hasViewed = sessionStorage.getItem(`viewed_${eventId}`);
         if (!hasViewed) {
             sessionStorage.setItem(`viewed_${eventId}`, 'true');
-            set(ref(database, `events/${eventId}/stats/views`), increment(1));
+            update(ref(database, `events/${eventId}/stats`), { views: increment(1) });
         }
 
     }, [eventId]);
@@ -170,18 +170,18 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
     const handleLike = async () => {
         if (hasLiked) {
             // Remove Like
-            await set(ref(database, `events/${eventId}/stats/likes`), increment(-1));
+            await update(ref(database, `events/${eventId}/stats`), { likes: increment(-1) });
             setHasLiked(false);
             localStorage.removeItem(`liked_${eventId}`);
         } else {
             // Add Like
-            await set(ref(database, `events/${eventId}/stats/likes`), increment(1));
+            await update(ref(database, `events/${eventId}/stats`), { likes: increment(1) });
             setHasLiked(true);
             localStorage.setItem(`liked_${eventId}`, 'true');
 
             // If previously disliked, remove the dislike
             if (hasDisliked) {
-                await set(ref(database, `events/${eventId}/stats/dislikes`), increment(-1));
+                await update(ref(database, `events/${eventId}/stats`), { dislikes: increment(-1) });
                 setHasDisliked(false);
                 localStorage.removeItem(`disliked_${eventId}`);
             }
@@ -191,18 +191,18 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
     const handleDislike = async () => {
         if (hasDisliked) {
             // Remove Dislike
-            await set(ref(database, `events/${eventId}/stats/dislikes`), increment(-1));
+            await update(ref(database, `events/${eventId}/stats`), { dislikes: increment(-1) });
             setHasDisliked(false);
             localStorage.removeItem(`disliked_${eventId}`);
         } else {
             // Add Dislike
-            await set(ref(database, `events/${eventId}/stats/dislikes`), increment(1));
+            await update(ref(database, `events/${eventId}/stats`), { dislikes: increment(1) });
             setHasDisliked(true);
             localStorage.setItem(`disliked_${eventId}`, 'true');
 
             // If previously liked, remove the like
             if (hasLiked) {
-                await set(ref(database, `events/${eventId}/stats/likes`), increment(-1));
+                await update(ref(database, `events/${eventId}/stats`), { likes: increment(-1) });
                 setHasLiked(false);
                 localStorage.removeItem(`liked_${eventId}`);
             }
@@ -211,7 +211,7 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
 
     const handleShare = async () => {
         // Increment share count in DB
-        await set(ref(database, `events/${eventId}/stats/shares`), increment(1));
+        await update(ref(database, `events/${eventId}/stats`), { shares: increment(1) });
 
         const url = window.location.href;
         if (navigator.share) {
