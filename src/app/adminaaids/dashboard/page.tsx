@@ -3,8 +3,7 @@
 import useSWR, { mutate } from 'swr';
 import Link from 'next/link';
 import { useState } from 'react';
-import { FaPlus, FaEdit, FaTrash, FaCloudRain, FaEye, FaEyeSlash } from 'react-icons/fa';
-
+import { FaPlus, FaEdit, FaTrash, FaCloudRain, FaEye, FaEyeSlash, FaChartLine, FaUserShield } from 'react-icons/fa';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -97,6 +96,21 @@ export default function Dashboard() {
                             </p>
                         </div>
                         <div className="flex gap-3">
+                            <Link
+                                href={`/event/${event._id}?adminMode=true`}
+                                target="_blank"
+                                className="bg-purple-600 hover:bg-purple-700 p-2 rounded text-white flex items-center justify-center gap-2"
+                                title="Watch & Chat as Admin"
+                            >
+                                <FaUserShield /> <span className="hidden sm:inline text-xs font-bold">Admin</span>
+                            </Link>
+                            <Link
+                                href={`/adminaaids/dashboard/analytics?eventId=${event._id}`}
+                                className="bg-indigo-600 hover:bg-indigo-700 p-2 rounded text-white flex items-center justify-center gap-2"
+                                title="Analyze Event Data"
+                            >
+                                <FaChartLine /> <span className="hidden sm:inline text-xs font-bold">Analyze</span>
+                            </Link>
                             <button
                                 onClick={() => handleRainDelay(event._id)}
                                 className="bg-yellow-600 hover:bg-yellow-700 p-2 rounded text-white"

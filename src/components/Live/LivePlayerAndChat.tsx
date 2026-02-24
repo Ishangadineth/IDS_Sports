@@ -65,16 +65,23 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
         setUserId(storedId);
         setUserName(storedName);
 
-        // Check if Admin is logged in (via cookie logic if necessary, or just check role)
-        // For security, true admin should be validated server-side, but this is for UI logic
         const checkAdmin = async () => {
             try {
-                const res = await fetch('/api/auth/me'); // A simple endpoint to get user role
+                // Check local param first (useful for quick admin access from dashboard)
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('adminMode') === 'true') {
+                    setIsAdmin(true);
+                    setUserName('IDS_Sports');
+                    return;
+                }
+
+                // Fallback to fetch API
+                const res = await fetch('/api/auth/me');
                 if (res.ok) {
                     const data = await res.json();
                     if (data.role === 'admin' || data.role === 'moderator') {
                         setIsAdmin(true);
-                        setUserName('IDS_Sports'); // Force admin name
+                        setUserName('IDS_Sports');
                     }
                 }
             } catch (e) {
