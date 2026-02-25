@@ -21,6 +21,11 @@ interface ChatMessage {
     timestamp: any;
 }
 
+interface PinnedMessage {
+    text: string;
+    userName: string;
+}
+
 export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: LivePlayerAndChatProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const msgsEndRef = useRef<HTMLDivElement>(null);
@@ -39,6 +44,7 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
     // Firebase Data States
     const [stats, setStats] = useState({ likes: 0, dislikes: 0, views: 0, shares: 0 });
     const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [pinnedMsg, setPinnedMsg] = useState<PinnedMessage | null>(null);
 
     // Local Interaction States
     const [hasLiked, setHasLiked] = useState(false);
@@ -133,9 +139,20 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
             }
         });
 
+        // Listen to Pinned Message
+        const pinRef = ref(database, `events/${eventId}/pinnedMessage`);
+        const unsubscribePin = onValue(pinRef, (snapshot) => {
+            if (snapshot.exists()) {
+                setPinnedMsg(snapshot.val());
+            } else {
+                setPinnedMsg(null);
+            }
+        });
+
         return () => {
             unsubscribeStats();
             unsubscribeChat();
+            unsubscribePin();
         };
     }, [eventId]);
 
@@ -264,6 +281,19 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
         setMessageInput('');
     };
 
+    const pinMessage = async (msg: ChatMessage) => {
+        if (!isAdmin) return;
+        await set(ref(database, `events/${eventId}/pinnedMessage`), {
+            text: msg.text,
+            userName: msg.userName
+        });
+    };
+
+    const unpinMessage = async () => {
+        if (!isAdmin) return;
+        await set(ref(database, `events/${eventId}/pinnedMessage`), null);
+    };
+
     const updateName = (e: React.FocusEvent<HTMLInputElement>) => {
         let newName = e.target.value.trim();
         // Remove existing # suffix if user tried to type it manually
@@ -293,27 +323,32 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
         <div ref={containerRef} className="w-full flex flex-col bg-gray-900 overflow-hidden relative shadow-2xl rounded-xl border border-gray-800">
 
             {/* Main Content Area */}
-            <div className={`flex flex-col md:flex-row w-full relative transition-[height] duration-300 ${isFullscreen ? 'h-screen' : 'h-[30vh] sm:h-[40vh] md:h-[500px]'}`}>
+            <div className={`flex flex-col md:flex-row w-full relative transition-[height] duration-300 ${isFullscreen ? 'h-screen' : 'portrait:max-md:h-auto landscape:max-md:h-[80vh] md:h-[500px]'}`}>
 
-                {/* Video */}
-                <div className={`transition-all duration-300 ${showChat ? 'w-full md:w-3/4' : 'w-full'} h-full bg-black`}>
+                {/* Video Wrapper */}
+                <div className={`transition-all duration-300 ${showChat ? 'md:w-3/4' : 'w-full'} flex flex-col bg-black portrait:max-md:aspect-video portrait:max-md:w-full landscape:h-full md:h-full z-10 relative`}>
                     <VideoPlayer streamUrl={streamUrl} />
                 </div>
 
-                {/* Chat Panel - Sidebar on Desktop, Overlay on Mobile */}
+                {/* Chat Panel - Sideline on Desktop, Below on Mobile Portrait, Overlay on Mobile Landscape */}
                 <div
-                    className={`transition-transform duration-300 bg-gray-900 border-l border-gray-800 flex flex-col z-40 
-                        ${showChat ? 'translate-x-0' : 'translate-x-full'} 
-                        absolute md:relative top-0 right-0 h-full w-full md:w-1/4
+                    className={`transition-all duration-300 bg-gray-900 border-gray-800 flex flex-col z-40 
+                        ${showChat ? 'opacity-100' : 'opacity-0 hidden'} 
+                        /* Landscape Array (Overlay right side) */
+                        landscape:max-md:absolute landscape:max-md:top-0 landscape:max-md:right-0 landscape:max-md:h-full landscape:max-md:w-[320px] landscape:max-md:border-l
+                        /* Portrait Mobile (Below Video) */
+                        portrait:max-md:w-full portrait:max-md:h-[50vh] portrait:max-md:border-t portrait:max-md:relative
+                        /* Desktop (Side) */
+                        md:w-1/4 md:h-full md:border-l md:static
                     `}
                     onClick={(e) => e.stopPropagation()}
-                    onPointerDown={(e) => e.stopPropagation()} // Aggressive ad click block
+                    onPointerDown={(e) => e.stopPropagation()}
                 >
                     {/* Only render content when sliding in/open to prevent hidden interaction */}
                     {showChat && (
                         <>
                             {/* Chat Header */}
-                            <div className="p-3 border-b border-gray-800 flex justify-between items-center bg-gray-950/90 backdrop-blur-md sticky top-0 z-10">
+                            <div className="p-3 border-b flex-shrink-0 border-gray-800 flex justify-between items-center bg-gray-950/90 backdrop-blur-md sticky top-0 z-10">
                                 <h3 className="font-bold text-white flex items-center gap-2 text-sm">
                                     <FaCommentDots className="text-blue-500" /> Live Chat
                                 </h3>
@@ -328,20 +363,47 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
                                 onClick={(e) => e.stopPropagation()}
                                 onPointerDown={(e) => e.stopPropagation()}
                             >
+                                {pinnedMsg && (
+                                    <div className="bg-blue-900/40 border-l-4 border-blue-500 rounded p-2 mb-4 text-sm relative shadow-md">
+                                        <div className="font-bold flex items-center justify-between text-blue-200 text-xs mb-1">
+                                            <span>📌 Pinned by {pinnedMsg.userName}</span>
+                                            {isAdmin && (
+                                                <button onClick={unpinMessage} className="text-gray-400 hover:text-red-400">
+                                                    &times;
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div className="text-blue-50 leading-snug break-words">
+                                            {pinnedMsg.text}
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="text-center text-gray-500 text-xs my-4 bg-gray-800/50 py-1 rounded-full mx-8">Welcome to Live Chat!</div>
 
                                 {messages.map((msg) => (
-                                    <div key={msg.id} className="text-sm break-words leading-relaxed">
-                                        {msg.isAdmin ? (
-                                            <span className="font-bold text-green-400 flex items-center gap-1 inline-flex">
-                                                {msg.userName} <FaCheckCircle className="text-blue-500 bg-white rounded-full p-[1px] w-3 h-3" />:
-                                            </span>
-                                        ) : (
-                                            <span className={`font-bold ${msg.userId === userId ? 'text-blue-400' : 'text-gray-300'}`}>
-                                                {msg.userName}:
-                                            </span>
+                                    <div key={msg.id} className="text-sm break-words leading-relaxed group flex items-start justify-between">
+                                        <div>
+                                            {msg.isAdmin ? (
+                                                <span className="font-bold text-green-400 flex items-center gap-1 inline-flex">
+                                                    {msg.userName} <FaCheckCircle className="text-blue-500 bg-white rounded-full p-[1px] w-3 h-3" />:
+                                                </span>
+                                            ) : (
+                                                <span className={`font-bold ${msg.userId === userId ? 'text-blue-400' : 'text-gray-300'}`}>
+                                                    {msg.userName}:
+                                                </span>
+                                            )}
+                                            <span className="text-gray-200 ml-1">{msg.text}</span>
+                                        </div>
+                                        {isAdmin && (
+                                            <button
+                                                onClick={() => pinMessage(msg)}
+                                                className="opacity-0 group-hover:opacity-100 text-xs ml-2 text-gray-500 hover:text-blue-400"
+                                                title="Pin Message"
+                                            >
+                                                📌
+                                            </button>
                                         )}
-                                        <span className="text-gray-200 ml-1">{msg.text}</span>
                                     </div>
                                 ))}
                                 <div ref={msgsEndRef} />
@@ -405,7 +467,7 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
             </div>
 
             {/* Bottom Action Bar */}
-            <div className={`p-3 bg-gray-950 flex flex-wrap items-center justify-between text-gray-300 shadow-inner ${isFullscreen && !showChat ? 'absolute bottom-0 left-0 right-0 bg-black/90 backdrop-blur-md z-30 transform translate-y-full hover:translate-y-0 transition-transform duration-300' : ''}`}>
+            <div className={`p-3 border-t border-gray-800 bg-gray-950 flex flex-wrap items-center justify-between text-gray-300 shadow-inner z-20 ${isFullscreen && !showChat ? 'absolute bottom-0 left-0 right-0 bg-black/90 backdrop-blur-md transform translate-y-full hover:translate-y-0 transition-transform duration-300' : 'relative'}`}>
 
                 {/* Left side actions */}
                 <div className="flex items-center gap-4 sm:gap-6">

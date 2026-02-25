@@ -31,6 +31,7 @@ export const metadata: Metadata = {
 
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import NotificationBell from "@/components/Notifications/NotificationBell";
+import PushNotificationManager from "@/components/Notifications/PushNotificationManager";
 
 export default function RootLayout({
   children,
@@ -44,6 +45,7 @@ export default function RootLayout({
       >
         <AntiDebug />
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || "G-S3MTWH8KWV"} />
+        <PushNotificationManager />
 
         {/* Monetag MultiTag Script */}
         <Script

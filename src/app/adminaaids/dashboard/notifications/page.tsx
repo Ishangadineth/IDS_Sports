@@ -17,6 +17,7 @@ export default function AdminNotifications() {
     const [title, setTitle] = useState('');
     const [body, setBody] = useState('');
     const [url, setUrl] = useState('');
+    const [image, setImage] = useState('');
     const [isSending, setIsSending] = useState(false);
 
     // Recent Notifications
@@ -45,6 +46,7 @@ export default function AdminNotifications() {
 
         setIsSending(true);
         try {
+            // Save to In-App Bell system
             const notifRef = push(ref(database, 'notifications'));
             await set(notifRef, {
                 title,
@@ -52,10 +54,19 @@ export default function AdminNotifications() {
                 url: url || '',
                 timestamp: Date.now()
             });
+
+            // Trigger actual Browser Web Push Notifications via API
+            await fetch('/api/send-push', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, body, url, image })
+            });
+
             setTitle('');
             setBody('');
             setUrl('');
-            alert('Notification pushed to users!');
+            setImage('');
+            alert('Notification pushed to users & browsers!');
         } catch (error) {
             console.error(error);
             alert('Failed to send notification');
@@ -120,6 +131,18 @@ export default function AdminNotifications() {
                             className="w-full bg-gray-900 border border-gray-700 text-gray-300 px-4 py-2 rounded focus:outline-none focus:border-blue-500"
                         />
                         <p className="text-xs text-gray-500 mt-1">Leave empty if it's just an informative alert.</p>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold text-gray-300 mb-1">Image URL (Optional)</label>
+                        <input
+                            type="text"
+                            value={image}
+                            onChange={(e) => setImage(e.target.value)}
+                            placeholder="e.g. https://.../image.jpg"
+                            className="w-full bg-gray-900 border border-gray-700 text-gray-300 px-4 py-2 rounded focus:outline-none focus:border-blue-500"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Large image to show in Browser Push (Android/Desktop).</p>
                     </div>
 
                     <button
