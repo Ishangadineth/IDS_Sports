@@ -18,9 +18,32 @@ async function sendToAll(title: string, body: string, image?: string) {
     const data = await res.json();
     if (!data) return 0;
     const subscriptions = Object.values(data);
-    const payload = JSON.stringify({ title, body, url: '/', image });
+    const logId = `auto_${Date.now()}`;
+    const payload = JSON.stringify({
+        title,
+        body,
+        url: `/?notif_id=${logId}`,
+        image
+    });
     const results = await Promise.allSettled(subscriptions.map((sub: any) => webpush.sendNotification(sub, payload)));
-    return results.filter(r => r.status === 'fulfilled').length;
+    const successful = results.filter(r => r.status === 'fulfilled').length;
+
+    // Log to Firebase
+    await fetch(`${DB_URL}/notification_logs/${logId}.json`, {
+        method: 'PUT',
+        body: JSON.stringify({
+            id: logId,
+            title,
+            body,
+            sentCount: successful,
+            totalSubs: subscriptions.length,
+            clickCount: 0,
+            timestamp: Date.now(),
+            type: 'automated'
+        })
+    });
+
+    return successful;
 }
 
 async function sendToEventSubscribers(eventId: string, title: string, body: string, image?: string) {

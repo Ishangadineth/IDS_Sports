@@ -24,11 +24,16 @@ export async function POST(req: Request) {
         if (!data) return NextResponse.json({ success: true, count: 0 });
 
         const subscriptions = Object.values(data);
-        const payload = JSON.stringify({ title, body, url, image });
+        const logId = Date.now().toString();
+        const payload = JSON.stringify({
+            title,
+            body,
+            url: `/?notif_id=${logId}`,
+            image
+        });
 
         const results = await Promise.allSettled(
             subscriptions.map((sub: any) => webpush.sendNotification(sub, payload).catch(e => {
-                // If the subscription is expired or invalid (410), we could remove it from DB here.
                 console.error('Push error:', e);
                 throw e;
             }))
@@ -36,7 +41,21 @@ export async function POST(req: Request) {
 
         const successful = results.filter(r => r.status === 'fulfilled').length;
 
-        return NextResponse.json({ success: true, count: successful, total: subscriptions.length });
+        // Log stats to Firebase
+        await fetch(`${DB_URL}/notification_logs/${logId}.json`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                id: logId,
+                title,
+                body,
+                sentCount: successful,
+                totalSubs: subscriptions.length,
+                clickCount: 0,
+                timestamp: Date.now()
+            })
+        });
+
+        return NextResponse.json({ success: true, count: successful, total: subscriptions.length, logId });
     } catch (e) {
         return NextResponse.json({ error: (e as Error).message }, { status: 500 });
     }

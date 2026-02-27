@@ -1,19 +1,39 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import Link from 'next/link';
-import { useState } from 'react';
 import { FaPlayCircle, FaCalendarAlt, FaClock, FaTv, FaTimes, FaBell } from 'react-icons/fa';
 import Countdown from '@/components/Live/Countdown';
 import TourGuide from '@/components/Live/TourGuide';
 import { database } from '@/lib/firebase';
-import { ref, set } from 'firebase/database';
+import { ref, set, get } from 'firebase/database';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export default function Home() {
   const { data, isLoading } = useSWR('/api/events', fetcher, { refreshInterval: 30000 });
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
+
+  // Notification Click Tracking
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const notifId = urlParams.get('notif_id');
+    if (notifId) {
+      const trackClick = async () => {
+        try {
+          const clickRef = ref(database, `notification_logs/${notifId}/clickCount`);
+          const snapshot = await get(clickRef);
+          const currentCount = snapshot.exists() ? snapshot.val() : 0;
+          await set(clickRef, currentCount + 1);
+
+          // Clean URL
+          window.history.replaceState({}, document.title, "/");
+        } catch (e) { console.error('Tracking err', e); }
+      };
+      trackClick();
+    }
+  }, []);
 
   if (isLoading) {
     return (
