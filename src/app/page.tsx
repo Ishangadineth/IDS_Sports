@@ -3,9 +3,11 @@
 import useSWR from 'swr';
 import Link from 'next/link';
 import { useState } from 'react';
-import { FaPlayCircle, FaCalendarAlt, FaClock, FaTv, FaTimes } from 'react-icons/fa';
+import { FaPlayCircle, FaCalendarAlt, FaClock, FaTv, FaTimes, FaBell } from 'react-icons/fa';
 import Countdown from '@/components/Live/Countdown';
 import TourGuide from '@/components/Live/TourGuide';
+import { database } from '@/lib/firebase';
+import { ref, set } from 'firebase/database';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -247,14 +249,45 @@ function EventCard({ event, isLive = false, onSelect }: { event: any, isLive?: b
 
         {/* Footer Meta */}
         <div className="flex items-center justify-between text-xs text-gray-500 border-t border-gray-800 pt-3">
-          <div className="flex items-center gap-1.5">
-            <FaCalendarAlt className="text-blue-500/70" />
-            <span>{startTime.toLocaleDateString()}</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <FaCalendarAlt className="text-blue-500/70" />
+              <span>{startTime.toLocaleDateString()}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <FaClock className="text-blue-500/70" />
+              <span>{startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <FaClock className="text-blue-500/70" />
-            <span>{startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-          </div>
+
+          {/* Remind Me Button */}
+          {event.status === 'Scheduled' && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                // We'll handle the logic here or pass it down
+                const handleRemind = async () => {
+                  if (!('serviceWorker' in navigator)) return;
+                  const registration = await navigator.serviceWorker.ready;
+                  let sub = await registration.pushManager.getSubscription();
+
+                  if (!sub) {
+                    alert("Please enable notifications first using the Bell icon at the bottom left!");
+                    return;
+                  }
+
+                  const subId = btoa(sub.endpoint).replace(/[^a-zA-Z0-9]/g, '').slice(-20);
+                  await set(ref(database, `event_subscriptions/${event._id}/${subId}`), true);
+                  alert("Reminded! We will notify you when this match starts.");
+                };
+                handleRemind();
+              }}
+              className="bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white p-2 rounded-lg border border-blue-500/30 transition-all flex items-center gap-1 font-bold group/btn"
+              title="Remind me for this match"
+            >
+              <FaBell className="group-hover/btn:animate-bounce" />
+            </button>
+          )}
         </div>
       </div>
     </div>

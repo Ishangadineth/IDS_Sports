@@ -53,6 +53,14 @@ const EventSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+    notificationSent1hr: {
+        type: Boolean,
+        default: false,
+    },
+    notificationSentLive: {
+        type: Boolean,
+        default: false,
+    },
 }, { timestamps: true });
 
 export default mongoose.models.Event || mongoose.model('Event', EventSchema);

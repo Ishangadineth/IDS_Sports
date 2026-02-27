@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { database } from '@/lib/firebase';
 import { ref, push, set, onValue, remove } from 'firebase/database';
-import { FaTrash, FaPaperPlane } from 'react-icons/fa';
+import { FaTrash, FaPaperPlane, FaClock } from 'react-icons/fa';
 
 interface NotificationData {
     id: string;
@@ -18,6 +18,7 @@ export default function AdminNotifications() {
     const [body, setBody] = useState('');
     const [url, setUrl] = useState('');
     const [image, setImage] = useState('');
+    const [sendAt, setSendAt] = useState('');
     const [isSending, setIsSending] = useState(false);
 
     // Recent Notifications
@@ -46,27 +47,41 @@ export default function AdminNotifications() {
 
         setIsSending(true);
         try {
-            // Save to In-App Bell system
-            const notifRef = push(ref(database, 'notifications'));
-            await set(notifRef, {
-                title,
-                body,
-                url: url || '',
-                timestamp: Date.now()
-            });
+            // If it's for later, save to scheduled collection
+            if (sendAt && new Date(sendAt) > new Date()) {
+                const schedRef = push(ref(database, 'scheduled_notifications'));
+                await set(schedRef, {
+                    title,
+                    body,
+                    url: url || '',
+                    image: image || '',
+                    sendAt: new Date(sendAt).toISOString()
+                });
+                alert('Notification scheduled for ' + new Date(sendAt).toLocaleString());
+            } else {
+                // Save to In-App Bell system (Immediate)
+                const notifRef = push(ref(database, 'notifications'));
+                await set(notifRef, {
+                    title,
+                    body,
+                    url: url || '',
+                    timestamp: Date.now()
+                });
 
-            // Trigger actual Browser Web Push Notifications via API
-            await fetch('/api/send-push', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title, body, url, image })
-            });
+                // Trigger Browser Push (Immediate)
+                await fetch('/api/send-push', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, body, url, image })
+                });
+                alert('Notification broadcasted immediately!');
+            }
 
             setTitle('');
             setBody('');
             setUrl('');
             setImage('');
-            alert('Notification pushed to users & browsers!');
+            setSendAt('');
         } catch (error) {
             console.error(error);
             alert('Failed to send notification');
@@ -143,6 +158,19 @@ export default function AdminNotifications() {
                             className="w-full bg-gray-900 border border-gray-700 text-gray-300 px-4 py-2 rounded focus:outline-none focus:border-blue-500"
                         />
                         <p className="text-xs text-gray-500 mt-1">Large image to show in Browser Push (Android/Desktop).</p>
+                    </div>
+
+                    <div className="pt-4 border-t border-gray-700">
+                        <label className="block text-sm font-bold text-blue-400 mb-2 flex items-center gap-2">
+                            <FaClock /> Schedule for Later? (Optional)
+                        </label>
+                        <input
+                            type="datetime-local"
+                            value={sendAt}
+                            onChange={(e) => setSendAt(e.target.value)}
+                            className="w-full bg-gray-950 border border-blue-900/50 text-white px-4 py-2 rounded focus:outline-none focus:border-blue-500"
+                        />
+                        <p className="text-[10px] text-gray-500 mt-1 italic">Leave empty to send NOW. If set, it will be sent automatically at that time.</p>
                     </div>
 
                     <button
