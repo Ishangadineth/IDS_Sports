@@ -26,18 +26,48 @@ export default function NotificationPreferences() {
         }
 
         try {
-            // Check if we already have permission granted
+            const registration = await navigator.serviceWorker.ready;
+            const existingPushSub = await registration.pushManager.getSubscription();
+            const storedToken = localStorage.getItem('fcm_token');
+
+            // --- AUTO MIGRATION LOGIC ---
+            // If the user has an old VAPID push subscription but NO FCM token,
+            // we need to auto-migrate them behind the scenes.
+            if (existingPushSub && !storedToken && messaging) {
+                console.log('🔄 Auto-migrating old Web-Push subscriber to FCM...');
+                // 1. Unsubscribe from old VAPID subscription
+                await existingPushSub.unsubscribe();
+
+                // 2. Secretly register for FCM
+                const token = await getToken(messaging, {
+                    vapidKey: PUBLIC_VAPID_KEY,
+                    serviceWorkerRegistration: registration
+                });
+
+                if (token) {
+                    const tokenHash = btoa(token).replace(/[^a-zA-Z0-9]/g, '').slice(-30);
+                    await set(ref(database, `fcm_tokens/${tokenHash}`), {
+                        token: token,
+                        timestamp: Date.now(),
+                        migrated: true
+                    });
+                    localStorage.setItem('fcm_token', token);
+                    setFcmToken(token);
+                    setIsSubscribed(true);
+                    console.log('✅ Auto-migration to FCM successful!');
+                }
+                setLoading(false);
+                return;
+            }
+            // ----------------------------
+
+            // Normal FCM Checks
             if (Notification.permission === 'granted' && messaging) {
-                // We don't call getToken every time on load to save resources,
-                // just assume requested if permission is granted for now. 
-                // A more robust approach stores the token locally.
-                const storedToken = localStorage.getItem('fcm_token');
                 if (storedToken) {
                     setIsSubscribed(true);
                     setFcmToken(storedToken);
                 } else {
-                    // Try to get token silently if we have permission
-                    const registration = await navigator.serviceWorker.ready;
+                    // Try to get token silently if we have permission but missing local token
                     const token = await getToken(messaging, {
                         vapidKey: PUBLIC_VAPID_KEY,
                         serviceWorkerRegistration: registration
@@ -50,7 +80,7 @@ export default function NotificationPreferences() {
                 }
             }
         } catch (e) {
-            console.error('Check sub failed', e);
+            console.error('Check sub/migration failed', e);
         } finally {
             setLoading(false);
         }
