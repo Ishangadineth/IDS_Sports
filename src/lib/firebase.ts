@@ -8,7 +8,8 @@ const firebaseConfig = {
     projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "ids-sports",
     storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "ids-sports.firebasestorage.app",
     messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "94022513408",
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:94022513408:web:b9c5f0d78d0d370b3a39e5"
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:94022513408:web:b9c5f0d78d0d370b3a39e5",
+    measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "G-S3MTWH8KWV"
 };
 
 // Initialize Firebase only once
