@@ -1,27 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { database } from '@/lib/firebase';
+import { database, messaging } from '@/lib/firebase';
 import { ref, set, remove } from 'firebase/database';
 import { FaBell, FaBellSlash, FaTimes, FaCheckCircle } from 'react-icons/fa';
+import { getToken, deleteToken } from 'firebase/messaging';
 
+// Public VAPID Key used by FCM
 const PUBLIC_VAPID_KEY = 'BPKuJziX2y4UOocG-K33eXh4MksCirpPRBnld5fXRoEAkE82iZQye8oml3VT_41y6EnrIWi02-IRRS2jfYlknxI';
-
-function urlBase64ToUint8Array(base64String: string) {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-}
 
 export default function NotificationPreferences() {
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [fcmToken, setFcmToken] = useState<string | null>(null);
 
     useEffect(() => {
         checkSubscription();
@@ -34,9 +26,29 @@ export default function NotificationPreferences() {
         }
 
         try {
-            const registration = await navigator.serviceWorker.ready;
-            const subscription = await registration.pushManager.getSubscription();
-            setIsSubscribed(!!subscription);
+            // Check if we already have permission granted
+            if (Notification.permission === 'granted' && messaging) {
+                // We don't call getToken every time on load to save resources,
+                // just assume requested if permission is granted for now. 
+                // A more robust approach stores the token locally.
+                const storedToken = localStorage.getItem('fcm_token');
+                if (storedToken) {
+                    setIsSubscribed(true);
+                    setFcmToken(storedToken);
+                } else {
+                    // Try to get token silently if we have permission
+                    const registration = await navigator.serviceWorker.ready;
+                    const token = await getToken(messaging, {
+                        vapidKey: PUBLIC_VAPID_KEY,
+                        serviceWorkerRegistration: registration
+                    });
+                    if (token) {
+                        setIsSubscribed(true);
+                        setFcmToken(token);
+                        localStorage.setItem('fcm_token', token);
+                    }
+                }
+            }
         } catch (e) {
             console.error('Check sub failed', e);
         } finally {
@@ -53,22 +65,37 @@ export default function NotificationPreferences() {
                 return;
             }
 
+            if (!messaging) {
+                alert('Messaging system initializing. Please try again in a few seconds.');
+                return;
+            }
+
             const registration = await navigator.serviceWorker.register('/sw.js');
-            const subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
+            const token = await getToken(messaging, {
+                vapidKey: PUBLIC_VAPID_KEY,
+                serviceWorkerRegistration: registration
             });
 
-            // Save to Firebase
-            const subId = btoa(subscription.endpoint).replace(/[^a-zA-Z0-9]/g, '').slice(-20);
-            await set(ref(database, `push_subscriptions/${subId}`), JSON.parse(JSON.stringify(subscription)));
+            if (token) {
+                // Save to Firebase FCM tracking node
+                // We use a safe hash of the token as the key
+                const tokenHash = btoa(token).replace(/[^a-zA-Z0-9]/g, '').slice(-30);
+                await set(ref(database, `fcm_tokens/${tokenHash}`), {
+                    token: token,
+                    timestamp: Date.now()
+                });
 
-            setIsSubscribed(true);
-            setIsOpen(false);
-            alert('Great! You will now receive match alerts.');
+                localStorage.setItem('fcm_token', token);
+                setFcmToken(token);
+                setIsSubscribed(true);
+                setIsOpen(false);
+                alert('Great! You will now receive Match Alerts.');
+            } else {
+                alert('Failed to generate secure token. Try again.');
+            }
         } catch (err) {
             console.error('Subscription failed', err);
-            alert('Failed to enable notifications. Please try again.');
+            alert('Failed to enable notifications. Please clear site settings and try again.');
         } finally {
             setLoading(false);
         }
@@ -78,16 +105,17 @@ export default function NotificationPreferences() {
         if (!confirm('Are you sure you want to turn off match alerts?')) return;
         setLoading(true);
         try {
-            const registration = await navigator.serviceWorker.ready;
-            const subscription = await registration.pushManager.getSubscription();
-
-            if (subscription) {
-                const subId = btoa(subscription.endpoint).replace(/[^a-zA-Z0-9]/g, '').slice(-20);
-                await remove(ref(database, `push_subscriptions/${subId}`));
-                await subscription.unsubscribe();
+            if (messaging) {
+                await deleteToken(messaging);
+            }
+            if (fcmToken) {
+                const tokenHash = btoa(fcmToken).replace(/[^a-zA-Z0-9]/g, '').slice(-30);
+                await remove(ref(database, `fcm_tokens/${tokenHash}`));
             }
 
+            localStorage.removeItem('fcm_token');
             setIsSubscribed(false);
+            setFcmToken(null);
             setIsOpen(false);
             alert('Notifications turned off.');
         } catch (err) {

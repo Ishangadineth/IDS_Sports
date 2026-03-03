@@ -20,3 +20,17 @@ if (getApps().length === 0) {
 }
 
 export const database = getDatabase(app);
+
+// Initialize Firebase Cloud Messaging and get a reference to the service
+let messaging: any;
+if (typeof window !== 'undefined') {
+    // Only initialize messaging on the client side
+    import('firebase/messaging').then(({ getMessaging }) => {
+        try {
+            messaging = getMessaging(app);
+        } catch (err) {
+            console.error('Failed to initialize Firebase Messaging', err);
+        }
+    });
+}
+export { messaging };

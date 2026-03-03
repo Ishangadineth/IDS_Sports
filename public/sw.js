@@ -1,23 +1,34 @@
-self.addEventListener('push', function (event) {
-    if (event.data) {
-        const payload = event.data.json();
+importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
 
-        const notificationTitle = payload.title || 'IDS Sports';
-        const notificationOptions = {
-            body: payload.body || 'New Notification',
-            icon: '/icon.png', // Fallback, doesn't matter much if it fails
-            data: { url: payload.url || '/' },
-            requireInteraction: true // Stays until closed
-        };
+const firebaseConfig = {
+    apiKey: "AIzaSyAiBsH-BBRucReKK620xIa-X5ir2vk_FCQ",
+    authDomain: "ids-sports.firebaseapp.com",
+    projectId: "ids-sports",
+    storageBucket: "ids-sports.firebasestorage.app",
+    messagingSenderId: "94022513408",
+    appId: "1:94022513408:web:b9c5f0d78d0d370b3a39e5"
+};
 
-        if (payload.image) {
-            notificationOptions.image = payload.image;
-        }
+firebase.initializeApp(firebaseConfig);
+const messaging = firebase.messaging();
 
-        event.waitUntil(
-            self.registration.showNotification(notificationTitle, notificationOptions)
-        );
+messaging.onBackgroundMessage(function (payload) {
+    console.log('[firebase-messaging-sw.js] Received background message ', payload);
+
+    const notificationTitle = payload.data?.title || payload.notification?.title || 'IDS Sports';
+    const notificationOptions = {
+        body: payload.data?.body || payload.notification?.body || 'New update available.',
+        icon: '/icon.png',
+        data: { url: payload.data?.url || '/' },
+        requireInteraction: true
+    };
+
+    if (payload.data?.image) {
+        notificationOptions.image = payload.data.image;
     }
+
+    self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
 self.addEventListener('notificationclick', function (event) {

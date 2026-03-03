@@ -1,75 +1,53 @@
 import { NextResponse } from 'next/server';
-import webpush from 'web-push';
 import connectDB from '@/lib/db';
 import Event from '@/models/Event';
-
-const PUBLIC_VAPID_KEY = 'BPKuJziX2y4UOocG-K33eXh4MksCirpPRBnld5fXRoEAkE82iZQye8oml3VT_41y6EnrIWi02-IRRS2jfYlknxI';
-const PRIVATE_VAPID_KEY = 'r76PQYLkTGnO4vXizxr1FoTp4Ddy-T0FxSiZN8Y7U8U';
-const DB_URL = "https://ids-sports-default-rtdb.asia-southeast1.firebasedatabase.app";
-
-webpush.setVapidDetails(
-    'mailto:admin@idssports.com',
-    PUBLIC_VAPID_KEY,
-    PRIVATE_VAPID_KEY
-);
+import { adminDatabase, messaging } from '@/lib/firebase-admin';
 
 async function sendToAll(title: string, body: string, image?: string) {
-    const res = await fetch(`${DB_URL}/push_subscriptions.json`);
-    const data = await res.json();
+    const snapshot = await adminDatabase.ref('fcm_tokens').once('value');
+    const data = snapshot.val();
     if (!data) return 0;
-    const subscriptions = Object.values(data);
-    const logId = `auto_${Date.now()}`;
-    const payload = JSON.stringify({
-        title,
-        body,
-        url: `/?notif_id=${logId}`,
-        image
-    });
-    const results = await Promise.allSettled(subscriptions.map((sub: any) => webpush.sendNotification(sub, payload)));
-    const successful = results.filter(r => r.status === 'fulfilled').length;
 
-    // Log to Firebase
-    await fetch(`${DB_URL}/notification_logs/${logId}.json`, {
-        method: 'PUT',
-        body: JSON.stringify({
-            id: logId,
+    const tokens = Object.values(data).map((entry: any) => entry.token);
+    if (tokens.length === 0) return 0;
+
+    const logId = `auto_${Date.now()}`;
+    const notificationUrl = `/?notif_id=${logId}`;
+
+    const payload = {
+        data: {
             title,
             body,
-            sentCount: successful,
-            totalSubs: subscriptions.length,
-            clickCount: 0,
-            timestamp: Date.now(),
-            type: 'automated'
-        })
+            url: notificationUrl,
+            ...(image && { image })
+        }
+    };
+
+    const CHUNK_SIZE = 500;
+    let successful = 0;
+
+    for (let i = 0; i < tokens.length; i += CHUNK_SIZE) {
+        const chunk = tokens.slice(i, i + CHUNK_SIZE);
+        const response = await messaging.sendEachForMulticast({
+            tokens: chunk as string[],
+            ...payload
+        });
+        successful += response.successCount;
+    }
+
+    // Log to Firebase
+    await adminDatabase.ref(`notification_logs/${logId}`).set({
+        id: logId,
+        title,
+        body,
+        sentCount: successful,
+        totalSubs: tokens.length,
+        clickCount: 0,
+        timestamp: Date.now(),
+        type: 'automated'
     });
 
     return successful;
-}
-
-async function sendToEventSubscribers(eventId: string, title: string, body: string, image?: string) {
-    // Get specific subscribers for this event
-    const res = await fetch(`${DB_URL}/event_subscriptions/${eventId}.json`);
-    const subsData = await res.json();
-    if (!subsData) return 0;
-
-    // These are just hashes, we need the actual push_subscriptions objects
-    const pushRes = await fetch(`${DB_URL}/push_subscriptions.json`);
-    const allPushSubs = await pushRes.json();
-    if (!allPushSubs) return 0;
-
-    const subIds = Object.keys(subsData);
-    const payload = JSON.stringify({ title, body, url: '/', image });
-
-    let count = 0;
-    for (const id of subIds) {
-        if (allPushSubs[id]) {
-            try {
-                await webpush.sendNotification(allPushSubs[id], payload);
-                count++;
-            } catch (e) { console.error('Event push err', e); }
-        }
-    }
-    return count;
 }
 
 export async function GET(req: Request) {
@@ -127,15 +105,16 @@ export async function GET(req: Request) {
         }
 
         // 3. Admin Scheduled Notifications (Custom)
-        const schedRes = await fetch(`${DB_URL}/scheduled_notifications.json`);
-        const schedData = await schedRes.json();
+        const schedSnapshot = await adminDatabase.ref('scheduled_notifications').once('value');
+        const schedData = schedSnapshot.val();
+
         if (schedData) {
             for (const key in schedData) {
                 const notif = schedData[key];
                 if (new Date(notif.sendAt) <= now) {
                     const count = await sendToAll(notif.title, notif.body, notif.image);
                     // Remove from scheduled
-                    await fetch(`${DB_URL}/scheduled_notifications/${key}.json`, { method: 'DELETE' });
+                    await adminDatabase.ref(`scheduled_notifications/${key}`).remove();
                     results.push({ type: 'Scheduled', title: notif.title, count });
                 }
             }

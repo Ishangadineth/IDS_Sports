@@ -1,62 +1,70 @@
 import { NextResponse } from 'next/server';
-import webpush from 'web-push';
-
-const PUBLIC_VAPID_KEY = 'BPKuJziX2y4UOocG-K33eXh4MksCirpPRBnld5fXRoEAkE82iZQye8oml3VT_41y6EnrIWi02-IRRS2jfYlknxI';
-const PRIVATE_VAPID_KEY = 'r76PQYLkTGnO4vXizxr1FoTp4Ddy-T0FxSiZN8Y7U8U';
-const DB_URL = "https://ids-sports-default-rtdb.asia-southeast1.firebasedatabase.app";
-
-webpush.setVapidDetails(
-    'mailto:admin@idssports.com',
-    PUBLIC_VAPID_KEY,
-    PRIVATE_VAPID_KEY
-);
+import { adminDatabase, messaging } from '@/lib/firebase-admin';
 
 export async function POST(req: Request) {
     try {
         const { title, body, url, image } = await req.json();
 
-        // Admin-only protection (simple check or rely on caller)
-        // Here we assume it's protected by the caller (dashboard).
-
-        const res = await fetch(`${DB_URL}/push_subscriptions.json`);
-        const data = await res.json();
+        // 1. Fetch FCM Tokens
+        const snapshot = await adminDatabase.ref('fcm_tokens').once('value');
+        const data = snapshot.val();
 
         if (!data) return NextResponse.json({ success: true, count: 0 });
 
-        const subscriptions = Object.values(data);
+        const tokens = Object.values(data).map((entry: any) => entry.token);
+        if (tokens.length === 0) return NextResponse.json({ success: true, count: 0 });
+
         const logId = Date.now().toString();
-        const payload = JSON.stringify({
-            title,
-            body,
-            url: `/?notif_id=${logId}`,
-            image
-        });
+        const notificationUrl = `/?notif_id=${logId}`;
 
-        const results = await Promise.allSettled(
-            subscriptions.map((sub: any) => webpush.sendNotification(sub, payload).catch(e => {
-                console.error('Push error:', e);
-                throw e;
-            }))
-        );
-
-        const successful = results.filter(r => r.status === 'fulfilled').length;
-
-        // Log stats to Firebase
-        await fetch(`${DB_URL}/notification_logs/${logId}.json`, {
-            method: 'PUT',
-            body: JSON.stringify({
-                id: logId,
+        // 2. Prepare FCM Payload
+        // We use 'data' payload because our sw.js is set up to handle background messages via data
+        const payload = {
+            data: {
                 title,
                 body,
-                sentCount: successful,
-                totalSubs: subscriptions.length,
-                clickCount: 0,
-                timestamp: Date.now()
-            })
+                url: notificationUrl,
+                ...(image && { image }) // Add image only if it exists
+            }
+        };
+
+        // 3. Send Multicast (Handles up to 500 tokens per batch, but Firebase Admin SDK auto-batches in some modern versions. For safety with 2300+, we chunk it into 500s)
+        const CHUNK_SIZE = 500;
+        let successCount = 0;
+        let failureCount = 0;
+
+        for (let i = 0; i < tokens.length; i += CHUNK_SIZE) {
+            const chunk = tokens.slice(i, i + CHUNK_SIZE);
+            const response = await messaging.sendEachForMulticast({
+                tokens: chunk as string[],
+                ...payload
+            });
+            successCount += response.successCount;
+            failureCount += response.failureCount;
+        }
+
+        // 4. Log stats to Firebase
+        await adminDatabase.ref(`notification_logs/${logId}`).set({
+            id: logId,
+            title,
+            body,
+            sentCount: successCount,
+            totalSubs: tokens.length,
+            clickCount: 0,
+            timestamp: Date.now()
         });
 
-        return NextResponse.json({ success: true, count: successful, total: subscriptions.length, logId });
+        // Optional: We can also run a cleanup for failed tokens (e.g., NotRegistered) later.
+
+        return NextResponse.json({
+            success: true,
+            count: successCount,
+            failed: failureCount,
+            total: tokens.length,
+            logId
+        });
     } catch (e) {
+        console.error('Send Push Error:', e);
         return NextResponse.json({ error: (e as Error).message }, { status: 500 });
     }
 }
