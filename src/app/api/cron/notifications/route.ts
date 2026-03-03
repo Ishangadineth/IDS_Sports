@@ -3,6 +3,8 @@ import connectDB from '@/lib/db';
 import Event from '@/models/Event';
 import { adminDatabase, messaging } from '@/lib/firebase-admin';
 
+export const dynamic = 'force-dynamic';
+
 async function sendToAll(title: string, body: string, image?: string) {
     const snapshot = await adminDatabase.ref('fcm_tokens').once('value');
     const data = snapshot.val();
