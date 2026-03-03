@@ -7,7 +7,7 @@ import { FaBell, FaBellSlash, FaTimes, FaCheckCircle } from 'react-icons/fa';
 import { getToken, deleteToken } from 'firebase/messaging';
 
 // Public VAPID Key used by FCM
-const PUBLIC_VAPID_KEY = 'dnISRPSXtOCuPE1QEYChQkOscWNtbrwib5UapNVYLY0';
+const PUBLIC_VAPID_KEY = 'BEM3n3iTbbhqLkL4kqlqoO2-9xHb-bMXIVyLItY5sMssxmOljIj6viHPvBRLR6JBBujIG8u0AND28gEi8zbVkEs';
 
 export default function NotificationPreferences() {
     const [isSubscribed, setIsSubscribed] = useState(false);
