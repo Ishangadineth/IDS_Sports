@@ -1,9 +1,18 @@
 import { NextResponse } from 'next/server';
 import { adminDatabase, messaging } from '@/lib/firebase-admin';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
     try {
         const { title, body, url, image } = await req.json();
+
+        if (!adminDatabase || !messaging) {
+            console.error('Firebase Admin services are not initialized. Check your environment variables.');
+            return NextResponse.json({
+                error: 'Firebase Admin not initialized. Please set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY on Vercel.'
+            }, { status: 500 });
+        }
 
         // 1. Fetch FCM Tokens
         const snapshot = await adminDatabase.ref('fcm_tokens').once('value');
