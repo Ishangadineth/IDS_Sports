@@ -2,39 +2,67 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import Event from '@/models/Event';
 import { adminDatabase, messaging } from '@/lib/firebase-admin';
+import webpush from 'web-push';
 
 export const dynamic = 'force-dynamic';
 
-async function sendToAll(title: string, body: string, image?: string) {
-    const snapshot = await adminDatabase.ref('fcm_tokens').once('value');
-    const data = snapshot.val();
-    if (!data) return 0;
+// --- LEGACY WEB-PUSH CONFIG ---
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_KEY || 'BPKuJziX2y4UOocG-K33eXh4MksCirpPRBnld5fXRoEAkE82iZQye8oml3VT_41y6EnrIWi02-IRRS2jfYlknxI';
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:support@ishangadineth.online';
 
-    const tokens = Object.values(data).map((entry: any) => entry.token);
-    if (tokens.length === 0) return 0;
+if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+}
+
+async function sendToAll(title: string, body: string, image?: string) {
+    if (!adminDatabase || !messaging) return 0;
+
+    const [fcmSnapshot, legacySnapshot] = await Promise.all([
+        adminDatabase.ref('fcm_tokens').once('value'),
+        adminDatabase.ref('push_subscriptions').once('value')
+    ]);
+
+    const fcmData = fcmSnapshot.val();
+    const legacyData = legacySnapshot.val();
+
+    let successful = 0;
+    let totalFCM = 0;
+    let totalLegacy = 0;
 
     const logId = `auto_${Date.now()}`;
-    const notificationUrl = `/?notif_id=${logId}`;
+    const notificationUrl = `https://idssports.ishangadineth.online/?notif_id=${logId}`;
 
-    const payload = {
-        data: {
-            title,
-            body,
-            url: notificationUrl,
-            ...(image && { image })
+    // A. FCM SEND
+    if (fcmData) {
+        const tokens = Object.values(fcmData).map((entry: any) => entry.token);
+        totalFCM = tokens.length;
+        if (tokens.length > 0) {
+            const payload = {
+                data: { title, body, url: notificationUrl, ...(image && { image }) }
+            };
+            const CHUNK_SIZE = 500;
+            for (let i = 0; i < tokens.length; i += CHUNK_SIZE) {
+                const chunk = tokens.slice(i, i + CHUNK_SIZE);
+                const response = await messaging.sendEachForMulticast({
+                    tokens: chunk as string[],
+                    ...payload
+                });
+                successful += response.successCount;
+            }
         }
-    };
+    }
 
-    const CHUNK_SIZE = 500;
-    let successful = 0;
+    // B. LEGACY WEB-PUSH SEND
+    if (legacyData && VAPID_PRIVATE_KEY) {
+        const legacySubs = Object.values(legacyData);
+        totalLegacy = legacySubs.length;
+        const legacyPayload = JSON.stringify({ title, body, url: notificationUrl, image });
 
-    for (let i = 0; i < tokens.length; i += CHUNK_SIZE) {
-        const chunk = tokens.slice(i, i + CHUNK_SIZE);
-        const response = await messaging.sendEachForMulticast({
-            tokens: chunk as string[],
-            ...payload
+        // Fire and forget top 500 legacy for cron (to keep it fast)
+        legacySubs.slice(0, 500).forEach((sub: any) => {
+            webpush.sendNotification(sub, legacyPayload).catch(() => { });
         });
-        successful += response.successCount;
     }
 
     // Log to Firebase
@@ -43,7 +71,9 @@ async function sendToAll(title: string, body: string, image?: string) {
         title,
         body,
         sentCount: successful,
-        totalSubs: tokens.length,
+        totalSubs: totalFCM + totalLegacy,
+        fcmCount: totalFCM,
+        legacyCount: totalLegacy,
         clickCount: 0,
         timestamp: Date.now(),
         type: 'automated'

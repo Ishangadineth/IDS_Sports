@@ -34,6 +34,7 @@ export default function AdminNotifications() {
     // Data states
     const [notifications, setNotifications] = useState<NotificationData[]>([]);
     const [logs, setLogs] = useState<NotificationLog[]>([]);
+    const [counts, setCounts] = useState({ fcm: 0, old: 0 });
 
     useEffect(() => {
         // Fetch In-App notifications
@@ -65,6 +66,13 @@ export default function AdminNotifications() {
                 setLogs([]);
             }
         });
+
+        // --- FETCH SUBSCRIBER COUNTS ---
+        const fcmRef = ref(database, 'fcm_tokens');
+        onValue(fcmRef, (s) => setCounts(prev => ({ ...prev, fcm: s.exists() ? Object.keys(s.val()).length : 0 })));
+
+        const oldRef = ref(database, 'push_subscriptions');
+        onValue(oldRef, (s) => setCounts(prev => ({ ...prev, old: s.exists() ? Object.keys(s.val()).length : 0 })));
 
         return () => { unsubNotif(); unsubLogs(); };
     }, []);
@@ -136,6 +144,22 @@ export default function AdminNotifications() {
                     <p className="text-gray-400 mt-1">Manage browser push, in-app alerts, and track engagement.</p>
                 </div>
             </header>
+
+            {/* Subscriber Analytics Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-gray-800/50 backdrop-blur p-4 rounded-xl border border-gray-700/50">
+                    <div className="text-xs font-bold text-gray-500 uppercase mb-1">Total Reach (Combined)</div>
+                    <div className="text-2xl font-black text-white">{counts.fcm + counts.old}</div>
+                </div>
+                <div className="bg-blue-900/10 backdrop-blur p-4 rounded-xl border border-blue-900/20">
+                    <div className="text-xs font-bold text-blue-400 uppercase mb-1 flex justify-between">FCM Subscribers <span className="text-[10px] bg-blue-900/50 px-1 rounded">New</span></div>
+                    <div className="text-2xl font-black text-blue-400">{counts.fcm}</div>
+                </div>
+                <div className="bg-amber-900/10 backdrop-blur p-4 rounded-xl border border-amber-900/20">
+                    <div className="text-xs font-bold text-amber-500 uppercase mb-1 flex justify-between">Legacy Web-Push <span className="text-[10px] bg-amber-900/50 px-1 rounded">Pending Migration</span></div>
+                    <div className="text-2xl font-black text-amber-500">{counts.old}</div>
+                </div>
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Column 1: Sender */}

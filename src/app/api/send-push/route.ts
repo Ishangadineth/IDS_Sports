@@ -1,7 +1,17 @@
 import { NextResponse } from 'next/server';
 import { adminDatabase, messaging } from '@/lib/firebase-admin';
+import webpush from 'web-push';
 
 export const dynamic = 'force-dynamic';
+
+// --- LEGACY WEB-PUSH CONFIG ---
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_KEY || 'BPKuJziX2y4UOocG-K33eXh4MksCirpPRBnld5fXRoEAkE82iZQye8oml3VT_41y6EnrIWi02-IRRS2jfYlknxI';
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:support@ishangadineth.online';
+
+if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+}
 
 export async function POST(req: Request) {
     try {
@@ -14,62 +24,96 @@ export async function POST(req: Request) {
             }, { status: 500 });
         }
 
-        // 1. Fetch FCM Tokens
-        const snapshot = await adminDatabase.ref('fcm_tokens').once('value');
-        const data = snapshot.val();
+        // 1. Fetch ALL Subscribers (FCM holds the new ones, push_subscriptions holds the legacy)
+        const [fcmSnapshot, legacySnapshot] = await Promise.all([
+            adminDatabase.ref('fcm_tokens').once('value'),
+            adminDatabase.ref('push_subscriptions').once('value')
+        ]);
 
-        if (!data) return NextResponse.json({ success: true, count: 0 });
+        const fcmData = fcmSnapshot.val();
+        const legacyData = legacySnapshot.val();
 
-        const tokens = Object.values(data).map((entry: any) => entry.token);
-        if (tokens.length === 0) return NextResponse.json({ success: true, count: 0 });
+        // Prepare Stats
+        let successCount = 0;
+        let failureCount = 0;
+        let totalFCM = 0;
+        let totalLegacy = 0;
 
         const logId = Date.now().toString();
-        const notificationUrl = `/?notif_id=${logId}`;
+        const notificationUrl = url ? (url.startsWith('http') ? url : `https://idssports.ishangadineth.online${url}`) : `https://idssports.ishangadineth.online/?notif_id=${logId}`;
 
-        // 2. Prepare FCM Payload
-        // We use 'data' payload because our sw.js is set up to handle background messages via data
-        const payload = {
-            data: {
+        // --- PART A: SEND FCM (NEW) ---
+        if (fcmData) {
+            const tokens = Object.values(fcmData).map((entry: any) => entry.token);
+            totalFCM = tokens.length;
+
+            if (tokens.length > 0) {
+                const payload = {
+                    data: {
+                        title,
+                        body,
+                        url: notificationUrl,
+                        ...(image && { image })
+                    }
+                };
+
+                const CHUNK_SIZE = 500;
+                for (let i = 0; i < tokens.length; i += CHUNK_SIZE) {
+                    const chunk = tokens.slice(i, i + CHUNK_SIZE);
+                    const response = await messaging.sendEachForMulticast({
+                        tokens: chunk as string[],
+                        ...payload
+                    });
+                    successCount += response.successCount;
+                    failureCount += response.failureCount;
+                }
+            }
+        }
+
+        // --- PART B: SEND LEGACY WEB-PUSH (OLD) ---
+        // We do this as a fire-and-forget or in background to not block the response too long
+        if (legacyData && VAPID_PRIVATE_KEY) {
+            const legacySubs = Object.values(legacyData);
+            totalLegacy = legacySubs.length;
+
+            // Limit to avoid Vercel timeout - only send to first 1000 legacy subs in this immediate call
+            // Ideally we'd use a background queue, but for transition this is okay.
+            const subsToSend = legacySubs.slice(0, 1000);
+
+            const legacyPayload = JSON.stringify({
                 title,
                 body,
                 url: notificationUrl,
-                ...(image && { image }) // Add image only if it exists
-            }
-        };
-
-        // 3. Send Multicast (Handles up to 500 tokens per batch, but Firebase Admin SDK auto-batches in some modern versions. For safety with 2300+, we chunk it into 500s)
-        const CHUNK_SIZE = 500;
-        let successCount = 0;
-        let failureCount = 0;
-
-        for (let i = 0; i < tokens.length; i += CHUNK_SIZE) {
-            const chunk = tokens.slice(i, i + CHUNK_SIZE);
-            const response = await messaging.sendEachForMulticast({
-                tokens: chunk as string[],
-                ...payload
+                image
             });
-            successCount += response.successCount;
-            failureCount += response.failureCount;
+
+            // We don't await all of them to keep response fast, but we'll trigger them
+            subsToSend.forEach((sub: any) => {
+                webpush.sendNotification(sub, legacyPayload).catch(err => {
+                    if (err.statusCode === 410 || err.statusCode === 404) {
+                        // Cleanup expired tokens if we wanted to
+                    }
+                });
+            });
         }
 
-        // 4. Log stats to Firebase
+        // 4. Log combined stats
         await adminDatabase.ref(`notification_logs/${logId}`).set({
             id: logId,
             title,
             body,
-            sentCount: successCount,
-            totalSubs: tokens.length,
+            sentCount: successCount, // This specifically tracks FCM success for now
+            totalSubs: totalFCM + totalLegacy,
+            fcmCount: totalFCM,
+            legacyCount: totalLegacy,
             clickCount: 0,
             timestamp: Date.now()
         });
 
-        // Optional: We can also run a cleanup for failed tokens (e.g., NotRegistered) later.
-
         return NextResponse.json({
             success: true,
-            count: successCount,
-            failed: failureCount,
-            total: tokens.length,
+            fcmSuccess: successCount,
+            totalReach: totalFCM + totalLegacy,
             logId
         });
     } catch (e) {

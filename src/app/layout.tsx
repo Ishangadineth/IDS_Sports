@@ -85,7 +85,7 @@ export default function RootLayout({
               <a href="https://t.me/IDS_Sports" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-blue-400"><FaTelegram /> Join Telegram</a>
               <a href="https://www.facebook.com/share/1A9D7LCHnw/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-blue-600"><FaFacebook /> Follow Facebook</a>
             </div>
-            <p className="mb-2">IDS Sports Version 1.1.3</p>
+            <p className="mb-2">IDS Sports Version 1.1.4</p>
             <p className="text-sm">
               Developed by <a href="https://ishangadineth.online/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Ishanga Dineth</a>
             </p>
