@@ -4,7 +4,7 @@ import "./globals.css";
 import AntiDebug from "@/components/Security/AntiDebug";
 import Link from "next/link";
 import Script from "next/script";
-import { FaTelegram, FaFacebook } from "react-icons/fa";
+import { FaTelegram, FaFacebook, FaWhatsapp } from "react-icons/fa";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -67,6 +67,7 @@ export default function RootLayout({
             </nav>
             <div className="flex items-center gap-4">
               <NotificationBell />
+              <a href="https://whatsapp.com/channel/0029Vb7At9P1SWt2vn2ZK932" target="_blank" rel="noopener noreferrer" className="text-green-500 hover:text-green-400 text-xl"><FaWhatsapp /></a>
               <a href="https://t.me/IDS_Sports" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 text-xl"><FaTelegram /></a>
               <a href="https://www.facebook.com/share/1A9D7LCHnw/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-500 text-xl"><FaFacebook /></a>
             </div>
@@ -82,10 +83,11 @@ export default function RootLayout({
         <footer className="bg-gray-900 border-t border-gray-800 py-8 mt-auto">
           <div className="container mx-auto px-4 text-center text-gray-400">
             <div className="flex justify-center gap-6 mb-4">
+              <a href="https://whatsapp.com/channel/0029Vb7At9P1SWt2vn2ZK932" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-green-500"><FaWhatsapp /> WhatsApp</a>
               <a href="https://t.me/IDS_Sports" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-blue-400"><FaTelegram /> Join Telegram</a>
               <a href="https://www.facebook.com/share/1A9D7LCHnw/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-blue-600"><FaFacebook /> Follow Facebook</a>
             </div>
-            <p className="mb-2">IDS Sports Version 1.1.4</p>
+            <p className="mb-2">IDS Sports Version 1.1.5</p>
             <p className="text-sm">
               Developed by <a href="https://ishangadineth.online/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Ishanga Dineth</a>
             </p>
