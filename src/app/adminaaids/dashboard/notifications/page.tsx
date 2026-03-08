@@ -34,7 +34,7 @@ export default function AdminNotifications() {
     // Data states
     const [notifications, setNotifications] = useState<NotificationData[]>([]);
     const [logs, setLogs] = useState<NotificationLog[]>([]);
-    const [counts, setCounts] = useState({ fcm: 0, old: 0 });
+    const [counts, setCounts] = useState({ fcm: 0 });
 
     useEffect(() => {
         // Fetch In-App notifications
@@ -67,12 +67,9 @@ export default function AdminNotifications() {
             }
         });
 
-        // --- FETCH SUBSCRIBER COUNTS ---
+        // --- FETCH FCM SUBSCRIBER COUNT ---
         const fcmRef = ref(database, 'fcm_tokens');
-        onValue(fcmRef, (s) => setCounts(prev => ({ ...prev, fcm: s.exists() ? Object.keys(s.val()).length : 0 })));
-
-        const oldRef = ref(database, 'push_subscriptions');
-        onValue(oldRef, (s) => setCounts(prev => ({ ...prev, old: s.exists() ? Object.keys(s.val()).length : 0 })));
+        onValue(fcmRef, (s) => setCounts({ fcm: s.exists() ? Object.keys(s.val()).length : 0 }));
 
         return () => { unsubNotif(); unsubLogs(); };
     }, []);
@@ -146,18 +143,17 @@ export default function AdminNotifications() {
             </header>
 
             {/* Subscriber Analytics Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-gray-800/50 backdrop-blur p-4 rounded-xl border border-gray-700/50">
-                    <div className="text-xs font-bold text-gray-500 uppercase mb-1">Total Reach (Combined)</div>
-                    <div className="text-2xl font-black text-white">{counts.fcm + counts.old}</div>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-blue-900/10 backdrop-blur p-4 rounded-xl border border-blue-900/20">
-                    <div className="text-xs font-bold text-blue-400 uppercase mb-1 flex justify-between">FCM Subscribers <span className="text-[10px] bg-blue-900/50 px-1 rounded">New</span></div>
-                    <div className="text-2xl font-black text-blue-400">{counts.fcm}</div>
+                    <div className="text-xs font-bold text-blue-400 uppercase mb-1">Total FCM Reach</div>
+                    <div className="text-3xl font-black text-blue-400">{counts.fcm}</div>
                 </div>
-                <div className="bg-amber-900/10 backdrop-blur p-4 rounded-xl border border-amber-900/20">
-                    <div className="text-xs font-bold text-amber-500 uppercase mb-1 flex justify-between">Legacy Web-Push <span className="text-[10px] bg-amber-900/50 px-1 rounded">Pending Migration</span></div>
-                    <div className="text-2xl font-black text-amber-500">{counts.old}</div>
+                <div className="bg-gray-800/50 backdrop-blur p-4 rounded-xl border border-gray-700/50">
+                    <div className="text-xs font-bold text-gray-500 uppercase mb-1">Status</div>
+                    <div className="text-sm font-bold text-emerald-400 flex items-center gap-2 mt-2">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                        Firebase Cloud Messaging Active (v1.2.0)
+                    </div>
                 </div>
             </div>
 
