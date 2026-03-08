@@ -32,7 +32,7 @@ export default function LivePlayerAndChat({ streamUrl, eventId, eventTitle }: Li
 
     // UI States
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [showChat, setShowChat] = useState(false);
+    const [showChat, setShowChat] = useState(true);
     const [isEditingName, setIsEditingName] = useState(false);
 
     // User States

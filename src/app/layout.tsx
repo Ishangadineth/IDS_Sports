@@ -19,6 +19,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "IDS Sports - Live Streaming",
   description: "Watch live sports events on IDS Sports.",
+  manifest: "/manifest.json",
   icons: {
     icon: '/icon.png',
     shortcut: '/favicon.ico',
